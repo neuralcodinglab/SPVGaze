@@ -1,14 +1,10 @@
 # Custom Ignores
 #------------------------------------------------------------------------------
 # Ignoring paid libraries
-Assets/AlmalenceDLVR/
-Assets/AlmalenceDLVR.meta
-Assets/OpenCVForUnity/
-/Assets/OpenCVForUnity.meta
-/Assets/ViveFoveatedRendering/
-/Assets/ViveFoveatedRendering.meta
-/Assets/ViveSR/
-/Assets/ViveSR.meta
+Assets/AlmalenceDLVR*
+Assets/OpenCVForUnity*
+/Assets/ViveFoveatedRendering*
+/Assets/ViveSR*
 
 # This .gitignore file should be placed at the root of your Unity project directory
 #
