@@ -1,0 +1,5 @@
+*out/
+*[Bb]uild/
+*.idea/
+*.DS_Store
+/Phisions3/
