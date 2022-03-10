@@ -232,8 +232,8 @@ GameObject:
   - component: {fileID: 368680694}
   - component: {fileID: 368680693}
   - component: {fileID: 368680692}
-  - component: {fileID: 368680695}
   - component: {fileID: 368680696}
+  - component: {fileID: 368680699}
   - component: {fileID: 368680698}
   m_Layer: 10
   m_Name: RenderQuad
@@ -321,19 +321,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 368680690}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
---- !u!114 &368680695
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 368680690}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2d9a5174875cd95409444404366bef1d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shader: {fileID: 4800000, guid: 38a6191a6a83f411093ebe8a358316eb, type: 3}
 --- !u!114 &368680696
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -352,7 +339,6 @@ MonoBehaviour:
   intensity_decay: 0.7
   trace_increase: 0.3
   trace_decay: 0.9
-  simCam: {fileID: 1036828806}
 --- !u!114 &368680698
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -368,6 +354,19 @@ MonoBehaviour:
   EnableEye: 1
   EnableEyeDataCallback: 1
   EnableEyeVersion: 1
+--- !u!114 &368680699
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 368680690}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df8a9ba22bcb4b38b9c84239f57d3971, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  simCam: {fileID: 1036828806}
 --- !u!1 &409158563
 GameObject:
   m_ObjectHideFlags: 0
@@ -1718,6 +1717,7 @@ GameObject:
   - component: {fileID: 1707605385}
   - component: {fileID: 1707605384}
   - component: {fileID: 1707605387}
+  - component: {fileID: 1707605389}
   - component: {fileID: 1707605388}
   m_Layer: 0
   m_Name: PlayerCamera
@@ -1799,14 +1799,17 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1707605383}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9226b945ec0da44cb9accbcbcf6eee62, type: 3}
+  m_Script: {fileID: 11500000, guid: 885f6ec9deec4948bd68ccc8e11b5639, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 2
-  scrollSpeed: 0
-  rotationSpeed: 5
+  shader: {fileID: 4800000, guid: d475e2a9b9d20a1449a0f9a7c48d663f, type: 3}
+  phospheneMapping: {fileID: 2800000, guid: c0db46a31019b3e49b8cc9dc29b763de, type: 3}
+  input_effect: 0.7
+  intensity_decay: 0.8
+  trace_increase: 0.1
+  trace_decay: 0.9
 --- !u!114 &1707605388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1835,8 +1838,8 @@ MonoBehaviour:
   m_ActionEvents:
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1707605387}
-        m_TargetAssemblyTypeName: Xarphos.Scripts.CameraController, Assembly-CSharp
+      - m_Target: {fileID: 1707605389}
+        m_TargetAssemblyTypeName: Xarphos.Scripts.InputHandler, Assembly-CSharp
         m_MethodName: Move
         m_Mode: 0
         m_Arguments:
@@ -1851,8 +1854,8 @@ MonoBehaviour:
     m_ActionName: Player/Move[/XInputControllerWindows/leftStick,/XInputControllerWindows1/leftStick,/Keyboard/w,/Keyboard/upArrow,/Keyboard/s,/Keyboard/downArrow,/Keyboard/a,/Keyboard/leftArrow,/Keyboard/d,/Keyboard/rightArrow]
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1707605387}
-        m_TargetAssemblyTypeName: Xarphos.Scripts.CameraController, Assembly-CSharp
+      - m_Target: {fileID: 1707605389}
+        m_TargetAssemblyTypeName: Xarphos.Scripts.InputHandler, Assembly-CSharp
         m_MethodName: Rotate
         m_Mode: 0
         m_Arguments:
@@ -1870,6 +1873,20 @@ MonoBehaviour:
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 1707605385}
+--- !u!114 &1707605389
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1707605383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9208b854020114a4ebd7cbc58967f9a1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveSpeedScale: 1
+  rotateSpeedScale: 5
 --- !u!1 &1739413830
 GameObject:
   m_ObjectHideFlags: 0
