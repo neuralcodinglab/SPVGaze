@@ -291,7 +291,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -413,6 +413,7 @@ GameObject:
   m_Component:
   - component: {fileID: 442312681}
   - component: {fileID: 442312682}
+  - component: {fileID: 442312683}
   m_Layer: 0
   m_Name: Point Light (2)
   m_TagString: Untagged
@@ -497,6 +498,26 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!114 &442312683
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 442312680}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 1
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
 --- !u!1 &456776864
 GameObject:
   m_ObjectHideFlags: 0
@@ -837,6 +858,7 @@ GameObject:
   m_Component:
   - component: {fileID: 725083882}
   - component: {fileID: 725083883}
+  - component: {fileID: 725083884}
   m_Layer: 0
   m_Name: Point Light (4)
   m_TagString: Untagged
@@ -921,6 +943,26 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!114 &725083884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 725083881}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 1
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
 --- !u!1 &767166455
 GameObject:
   m_ObjectHideFlags: 0
@@ -1033,7 +1075,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &819187976
 Transform:
   m_ObjectHideFlags: 0
@@ -1429,6 +1471,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1248194143}
   - component: {fileID: 1248194144}
+  - component: {fileID: 1248194145}
   m_Layer: 0
   m_Name: Point Light
   m_TagString: Untagged
@@ -1513,6 +1556,26 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!114 &1248194145
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1248194142}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 1
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
 --- !u!1 &1534195782
 GameObject:
   m_ObjectHideFlags: 0
@@ -1621,6 +1684,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1673399619}
   - component: {fileID: 1673399620}
+  - component: {fileID: 1673399621}
   m_Layer: 0
   m_Name: Point Light (3)
   m_TagString: Untagged
@@ -1705,6 +1769,26 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!114 &1673399621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1673399618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 1
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
 --- !u!1 &1707605383
 GameObject:
   m_ObjectHideFlags: 0
@@ -1716,9 +1800,11 @@ GameObject:
   - component: {fileID: 1707605386}
   - component: {fileID: 1707605385}
   - component: {fileID: 1707605384}
-  - component: {fileID: 1707605387}
   - component: {fileID: 1707605389}
   - component: {fileID: 1707605388}
+  - component: {fileID: 1707605387}
+  - component: {fileID: 1707605390}
+  - component: {fileID: 1707605391}
   m_Layer: 0
   m_Name: PlayerCamera
   m_TagString: MainCamera
@@ -1887,6 +1973,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeedScale: 1
   rotateSpeedScale: 5
+--- !u!114 &1707605390
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1707605383}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 762856570568b224085a9ee68d146d62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  shader: {fileID: 4800000, guid: d475e2a9b9d20a1449a0f9a7c48d663f, type: 3}
+  phospheneConfigurationFile: Assets/Xarphos/pSpecs1.json
+  input_effect: 0.7
+  intensity_decay: 0.8
+  trace_increase: 0.1
+  trace_decay: 0.9
+--- !u!114 &1707605391
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1707605383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bff1242a7c3dd459478d7473896234, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sigma: 4.02
+  shader: {fileID: 4800000, guid: f69749e3ce42c8d41b404a0f5b236907, type: 3}
+  quality: 2
 --- !u!1 &1739413830
 GameObject:
   m_ObjectHideFlags: 0
@@ -1933,6 +2052,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2075939271}
   - component: {fileID: 2075939272}
+  - component: {fileID: 2075939273}
   m_Layer: 0
   m_Name: Point Light (1)
   m_TagString: Untagged
@@ -2017,3 +2137,23 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!114 &2075939273
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2075939270}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 1
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}

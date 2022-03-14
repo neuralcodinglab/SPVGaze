@@ -1,12 +1,9 @@
 ﻿using System;
-using OpenCVForUnity.CoreModule;
-using OpenCVForUnity.ImgprocModule;
-using OpenCVForUnity.UnityUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Rect = UnityEngine.Rect;
 
-namespace Xarphos
+namespace Xarphos.Scripts
 {
     public class GraphicsTest : MonoBehaviour
     {
@@ -41,7 +38,7 @@ namespace Xarphos
         [SerializeField] float trace_increase = 0.1f;
         [SerializeField] float trace_decay = 0.9f;
 
-        protected bool cannyFiltering;
+        protected bool cannyFiltering = true;
         
         
         private void Awake()
