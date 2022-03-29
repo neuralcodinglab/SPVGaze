@@ -5,9 +5,12 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/ViveSR/Scenes/Eye/EyeSample_v2.unity
     guid: 95faae79a7fda8248a4f435507170572
+  - enabled: 1
+    path: Assets/Samples/Tobii XR SDK/3.0.1/Developer Tools/Example_DevTools.unity
+    guid: 3ac82b1e304123e44943e79a20128bfa
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: bfa1182bd221b4ca89619141f66f1260,
       type: 2}
@@ -22,4 +25,6 @@ EditorBuildSettings:
     com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 1a4c68ca72a83449f938d669337cb305,
       type: 2}
     com.unity.xr.openxr.settings4: {fileID: 11400000, guid: a9a6963505ddf7f4d886008c6dc86122,
+      type: 2}
+    xr.sdk.mock-hmd.settings: {fileID: 11400000, guid: 3ea5e50b1e7b26e4aaa36dd11b6c379a,
       type: 2}
