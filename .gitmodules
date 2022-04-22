@@ -1,3 +1,3 @@
 [submodule "xarphos-basement/Assets/Xarphos/SharedWork"]
 	path = xarphos-basement/Assets/Xarphos/SharedWork
-	url = git@github.com:neuralcodinglab/XarphosUnityCode.git
+	url = https://github.com/neuralcodinglab/XarphosUnityCode.git
