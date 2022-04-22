@@ -23,6 +23,17 @@ namespace Xarphos.Scripts
             }
         }
 
+        /// <summary>
+        /// Start is called on the frame when a script is enabled just before
+        /// any of the Update methods is called the first time.
+        /// </summary>
+        void Start()
+        {
+            XarphosBasement inputMap = new XarphosBasement();
+            inputMap.Player.Move.performed += Move;
+            inputMap.Player.Look.performed += Rotate;
+        }
+
         private void Update()
         {
             _scale = Time.deltaTime * moveSpeedScale;

@@ -5907,7 +5907,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1165371331
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6799,9 +6799,8 @@ GameObject:
   - component: {fileID: 1707605385}
   - component: {fileID: 1707605384}
   - component: {fileID: 1707605391}
-  - component: {fileID: 1707605390}
-  - component: {fileID: 1707605392}
   - component: {fileID: 1707605393}
+  - component: {fileID: 1707605394}
   m_Layer: 0
   m_Name: PlayerCamera
   m_TagString: MainCamera
@@ -6868,31 +6867,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1707605383}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0.04, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 303118324}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
---- !u!114 &1707605390
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1707605383}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: edd7a3a668f4d93408e5efc3de49ff39, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  shader: {fileID: 4800000, guid: d475e2a9b9d20a1449a0f9a7c48d663f, type: 3}
-  phospheneConfigurationFile: Assets/Xarphos/SharedWork/pSpecs1.json
-  input_effect: 0.7
-  intensity_decay: 0.8
-  trace_increase: 0.1
-  trace_decay: 0.9
 --- !u!114 &1707605391
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6911,18 +6892,6 @@ MonoBehaviour:
   m_TrackingType: 0
   m_UpdateType: 0
   m_UseRelativeTransform: 0
---- !u!114 &1707605392
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1707605383}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: df8a9ba22bcb4b38b9c84239f57d3971, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1707605393
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6996,6 +6965,33 @@ MonoBehaviour:
     m_SingletonActionBindings: []
     m_Flags: 0
   m_HasMigratedActions: 1
+--- !u!114 &1707605394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1707605383}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 642920ae8828407478eb4887fb2f0244, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  TargetCamera: {fileID: 1707605385}
+  surfaceReplacementMode: 0
+  resolution: {x: 512, y: 512}
+  inputRT: {fileID: 0}
+  activationMask: {fileID: 0}
+  phospheneRT: {fileID: 0}
+  phospheneConfigFile: Assets/Xarphos/SharedWork/PhospheneConfigurations/cfg2.json
+  phospheneShader: {fileID: 4800000, guid: b6e3fff5a865bd14a886e48169b91ba8, type: 3}
+  imageProcessingShader: {fileID: 4800000, guid: cd5097e322e231342bd3eb75d7405a0c,
+    type: 3}
+  temporalDynamicsCS: {fileID: 7200000, guid: 331e3fffe80eab74ca2360f8c03122b8, type: 3}
+  input_effect: 1
+  intensity_decay: 0
+  trace_increase: 0
+  trace_decay: 0
 --- !u!1 &1739413830
 GameObject:
   m_ObjectHideFlags: 0
@@ -7773,7 +7769,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1927887325
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Sirenix.Utilities;
 using UnityEngine;
+// using Sirenix.Utilities;
 
 namespace Xarphos.Scripts.DataCollection
 {
@@ -116,8 +116,8 @@ namespace Xarphos.Scripts.DataCollection
 
         private string ToCSVFields(IEnumerable<object> values, bool addEOL = true)
         {
-            var strValues = 
-                values.Convert(field => field == null ? "" : field.ToString());
+            var strValues = values.Cast<string>();
+                // values.Convert(field => field == null ? "" : field.ToString());
 
             return ToCSVFields(strValues, addEOL);
         }
