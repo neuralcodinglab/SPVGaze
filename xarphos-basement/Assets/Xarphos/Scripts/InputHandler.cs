@@ -12,16 +12,6 @@ namespace Xarphos.Scripts
         public float rotateSpeedScale = 0.2f;
         private Vector3 _move;
         private float _scale, _rotate;
-        
-        
-        private void Awake()
-        {
-            var x = GetComponent<PlayerInput>();
-            foreach (var map in x.actions.actionMaps)
-            {
-                map.Enable();
-            }
-        }
 
         /// <summary>
         /// Start is called on the frame when a script is enabled just before
