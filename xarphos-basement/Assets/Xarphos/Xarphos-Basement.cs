@@ -24,7 +24,7 @@ public partial class @XarphosBasement : IInputActionCollection2, IDisposable
     ""name"": ""Xarphos-Basement"",
     ""maps"": [
         {
-            ""name"": ""Player"",
+            ""name"": ""Experiment"",
             ""id"": ""0c1a547e-22aa-4aae-8248-84c703b22548"",
             ""actions"": [
                 {
@@ -44,6 +44,51 @@ public partial class @XarphosBasement : IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""TogglePhospheneSim"",
+                    ""type"": ""Button"",
+                    ""id"": ""3fe95d10-e39d-4cc8-87f5-5a1b2a7a1609"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ToggleEdgeDetection"",
+                    ""type"": ""Button"",
+                    ""id"": ""3e196229-2795-46f2-bae8-3f888893222d"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""IterateSurfaceReplacement"",
+                    ""type"": ""Button"",
+                    ""id"": ""e0959e22-032b-4278-9985-09bbe7bf988b"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ToggleGazeLocking"",
+                    ""type"": ""Button"",
+                    ""id"": ""35675ead-d89e-41d8-905e-a26a620f4a17"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ToggleCamLocking"",
+                    ""type"": ""Button"",
+                    ""id"": ""effd86eb-132c-4dc0-8579-f9f87766e61c"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -200,6 +245,116 @@ public partial class @XarphosBasement : IInputActionCollection2, IDisposable
                     ""action"": ""Look"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""34a92533-1493-489f-97e9-401f2c472119"",
+                    ""path"": ""<Keyboard>/p"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TogglePhospheneSim"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""32b6aaa4-3eee-42d2-9d12-f0792fc402ca"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TogglePhospheneSim"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""24a67646-4120-4be0-889b-b8fd6b463fe5"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ToggleEdgeDetection"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0d48eca3-feac-46bd-a760-06ecc1e0d7c0"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ToggleEdgeDetection"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""3015442e-b235-486c-a9a6-bbf917e480c6"",
+                    ""path"": ""<Keyboard>/t"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""IterateSurfaceReplacement"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ab8dff0c-f727-49c3-a20c-017d3030bfa4"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""IterateSurfaceReplacement"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""eec3cc20-0a98-451b-954a-9cfb0fd747ef"",
+                    ""path"": ""<Keyboard>/g"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ToggleGazeLocking"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b685618a-b179-4684-8af0-3a47dc8fd4b4"",
+                    ""path"": ""<Keyboard>/4"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ToggleGazeLocking"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d50be507-897d-416c-96ce-65ea22dd8b9b"",
+                    ""path"": ""<Keyboard>/c"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ToggleCamLocking"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1c6fc37a-ea91-4895-9a57-e60854d729ac"",
+                    ""path"": ""<Keyboard>/5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ToggleCamLocking"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -267,10 +422,15 @@ public partial class @XarphosBasement : IInputActionCollection2, IDisposable
         }
     ]
 }");
-        // Player
-        m_Player = asset.FindActionMap("Player", throwIfNotFound: true);
-        m_Player_Move = m_Player.FindAction("Move", throwIfNotFound: true);
-        m_Player_Look = m_Player.FindAction("Look", throwIfNotFound: true);
+        // Experiment
+        m_Experiment = asset.FindActionMap("Experiment", throwIfNotFound: true);
+        m_Experiment_Move = m_Experiment.FindAction("Move", throwIfNotFound: true);
+        m_Experiment_Look = m_Experiment.FindAction("Look", throwIfNotFound: true);
+        m_Experiment_TogglePhospheneSim = m_Experiment.FindAction("TogglePhospheneSim", throwIfNotFound: true);
+        m_Experiment_ToggleEdgeDetection = m_Experiment.FindAction("ToggleEdgeDetection", throwIfNotFound: true);
+        m_Experiment_IterateSurfaceReplacement = m_Experiment.FindAction("IterateSurfaceReplacement", throwIfNotFound: true);
+        m_Experiment_ToggleGazeLocking = m_Experiment.FindAction("ToggleGazeLocking", throwIfNotFound: true);
+        m_Experiment_ToggleCamLocking = m_Experiment.FindAction("ToggleCamLocking", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -327,34 +487,59 @@ public partial class @XarphosBasement : IInputActionCollection2, IDisposable
         return asset.FindBinding(bindingMask, out action);
     }
 
-    // Player
-    private readonly InputActionMap m_Player;
-    private IPlayerActions m_PlayerActionsCallbackInterface;
-    private readonly InputAction m_Player_Move;
-    private readonly InputAction m_Player_Look;
-    public struct PlayerActions
+    // Experiment
+    private readonly InputActionMap m_Experiment;
+    private IExperimentActions m_ExperimentActionsCallbackInterface;
+    private readonly InputAction m_Experiment_Move;
+    private readonly InputAction m_Experiment_Look;
+    private readonly InputAction m_Experiment_TogglePhospheneSim;
+    private readonly InputAction m_Experiment_ToggleEdgeDetection;
+    private readonly InputAction m_Experiment_IterateSurfaceReplacement;
+    private readonly InputAction m_Experiment_ToggleGazeLocking;
+    private readonly InputAction m_Experiment_ToggleCamLocking;
+    public struct ExperimentActions
     {
         private @XarphosBasement m_Wrapper;
-        public PlayerActions(@XarphosBasement wrapper) { m_Wrapper = wrapper; }
-        public InputAction @Move => m_Wrapper.m_Player_Move;
-        public InputAction @Look => m_Wrapper.m_Player_Look;
-        public InputActionMap Get() { return m_Wrapper.m_Player; }
+        public ExperimentActions(@XarphosBasement wrapper) { m_Wrapper = wrapper; }
+        public InputAction @Move => m_Wrapper.m_Experiment_Move;
+        public InputAction @Look => m_Wrapper.m_Experiment_Look;
+        public InputAction @TogglePhospheneSim => m_Wrapper.m_Experiment_TogglePhospheneSim;
+        public InputAction @ToggleEdgeDetection => m_Wrapper.m_Experiment_ToggleEdgeDetection;
+        public InputAction @IterateSurfaceReplacement => m_Wrapper.m_Experiment_IterateSurfaceReplacement;
+        public InputAction @ToggleGazeLocking => m_Wrapper.m_Experiment_ToggleGazeLocking;
+        public InputAction @ToggleCamLocking => m_Wrapper.m_Experiment_ToggleCamLocking;
+        public InputActionMap Get() { return m_Wrapper.m_Experiment; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
         public bool enabled => Get().enabled;
-        public static implicit operator InputActionMap(PlayerActions set) { return set.Get(); }
-        public void SetCallbacks(IPlayerActions instance)
+        public static implicit operator InputActionMap(ExperimentActions set) { return set.Get(); }
+        public void SetCallbacks(IExperimentActions instance)
         {
-            if (m_Wrapper.m_PlayerActionsCallbackInterface != null)
+            if (m_Wrapper.m_ExperimentActionsCallbackInterface != null)
             {
-                @Move.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnMove;
-                @Move.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnMove;
-                @Move.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnMove;
-                @Look.started -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLook;
-                @Look.performed -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLook;
-                @Look.canceled -= m_Wrapper.m_PlayerActionsCallbackInterface.OnLook;
+                @Move.started -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnMove;
+                @Move.performed -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnMove;
+                @Move.canceled -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnMove;
+                @Look.started -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnLook;
+                @Look.performed -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnLook;
+                @Look.canceled -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnLook;
+                @TogglePhospheneSim.started -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnTogglePhospheneSim;
+                @TogglePhospheneSim.performed -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnTogglePhospheneSim;
+                @TogglePhospheneSim.canceled -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnTogglePhospheneSim;
+                @ToggleEdgeDetection.started -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnToggleEdgeDetection;
+                @ToggleEdgeDetection.performed -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnToggleEdgeDetection;
+                @ToggleEdgeDetection.canceled -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnToggleEdgeDetection;
+                @IterateSurfaceReplacement.started -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnIterateSurfaceReplacement;
+                @IterateSurfaceReplacement.performed -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnIterateSurfaceReplacement;
+                @IterateSurfaceReplacement.canceled -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnIterateSurfaceReplacement;
+                @ToggleGazeLocking.started -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnToggleGazeLocking;
+                @ToggleGazeLocking.performed -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnToggleGazeLocking;
+                @ToggleGazeLocking.canceled -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnToggleGazeLocking;
+                @ToggleCamLocking.started -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnToggleCamLocking;
+                @ToggleCamLocking.performed -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnToggleCamLocking;
+                @ToggleCamLocking.canceled -= m_Wrapper.m_ExperimentActionsCallbackInterface.OnToggleCamLocking;
             }
-            m_Wrapper.m_PlayerActionsCallbackInterface = instance;
+            m_Wrapper.m_ExperimentActionsCallbackInterface = instance;
             if (instance != null)
             {
                 @Move.started += instance.OnMove;
@@ -363,10 +548,25 @@ public partial class @XarphosBasement : IInputActionCollection2, IDisposable
                 @Look.started += instance.OnLook;
                 @Look.performed += instance.OnLook;
                 @Look.canceled += instance.OnLook;
+                @TogglePhospheneSim.started += instance.OnTogglePhospheneSim;
+                @TogglePhospheneSim.performed += instance.OnTogglePhospheneSim;
+                @TogglePhospheneSim.canceled += instance.OnTogglePhospheneSim;
+                @ToggleEdgeDetection.started += instance.OnToggleEdgeDetection;
+                @ToggleEdgeDetection.performed += instance.OnToggleEdgeDetection;
+                @ToggleEdgeDetection.canceled += instance.OnToggleEdgeDetection;
+                @IterateSurfaceReplacement.started += instance.OnIterateSurfaceReplacement;
+                @IterateSurfaceReplacement.performed += instance.OnIterateSurfaceReplacement;
+                @IterateSurfaceReplacement.canceled += instance.OnIterateSurfaceReplacement;
+                @ToggleGazeLocking.started += instance.OnToggleGazeLocking;
+                @ToggleGazeLocking.performed += instance.OnToggleGazeLocking;
+                @ToggleGazeLocking.canceled += instance.OnToggleGazeLocking;
+                @ToggleCamLocking.started += instance.OnToggleCamLocking;
+                @ToggleCamLocking.performed += instance.OnToggleCamLocking;
+                @ToggleCamLocking.canceled += instance.OnToggleCamLocking;
             }
         }
     }
-    public PlayerActions @Player => new PlayerActions(this);
+    public ExperimentActions @Experiment => new ExperimentActions(this);
     private int m_KeyboardMouseSchemeIndex = -1;
     public InputControlScheme KeyboardMouseScheme
     {
@@ -412,9 +612,14 @@ public partial class @XarphosBasement : IInputActionCollection2, IDisposable
             return asset.controlSchemes[m_XRSchemeIndex];
         }
     }
-    public interface IPlayerActions
+    public interface IExperimentActions
     {
         void OnMove(InputAction.CallbackContext context);
         void OnLook(InputAction.CallbackContext context);
+        void OnTogglePhospheneSim(InputAction.CallbackContext context);
+        void OnToggleEdgeDetection(InputAction.CallbackContext context);
+        void OnIterateSurfaceReplacement(InputAction.CallbackContext context);
+        void OnToggleGazeLocking(InputAction.CallbackContext context);
+        void OnToggleCamLocking(InputAction.CallbackContext context);
     }
 }

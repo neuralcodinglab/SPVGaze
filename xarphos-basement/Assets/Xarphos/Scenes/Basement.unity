@@ -651,6 +651,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SRanipal Eye Framework
       objectReference: {fileID: 0}
+    - target: {fileID: 1707266662751158, guid: f676e25d0fcd1ec4fa22af3017316de9, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4879914434278830, guid: f676e25d0fcd1ec4fa22af3017316de9, type: 3}
       propertyPath: m_RootOrder
       value: 1
@@ -698,7 +702,7 @@ PrefabInstance:
     - target: {fileID: 114214629311031788, guid: f676e25d0fcd1ec4fa22af3017316de9,
         type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 114214629311031788, guid: f676e25d0fcd1ec4fa22af3017316de9,
         type: 3}
@@ -2156,7 +2160,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 6th Button
+  m_text: Toggle Cam Lock
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5327,8 +5331,180 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9208b854020114a4ebd7cbc58967f9a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  actionManagerRef: {fileID: 1927887327}
   moveSpeedScale: 1
   rotateSpeedScale: 5
+  movePlayer:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Move Player
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 007c5301-2ff9-4d1b-963a-e2c290174c10
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 8329493564787433309, guid: ba47e8253eefe60409f20f9227ccc725,
+      type: 3}
+  rotatePlayer:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Rotate Player
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: dc70a34d-b450-42e2-8f76-01510aca4af1
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: -1958524516430780698, guid: ba47e8253eefe60409f20f9227ccc725,
+      type: 3}
+  phospheneSimToggle:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Phosphene Sim Toggle
+      m_Type: 1
+      m_ExpectedControlType: Button
+      m_Id: 50fbbb97-9bf2-4128-aa97-282fea9b11f4
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 69bb3f66-ee92-431c-a543-98f4e85a3572
+        m_Path: <Keyboard>/p
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Phosphene Sim Toggle
+        m_Flags: 0
+      - m_Name: 
+        m_Id: 3b51e61e-c15f-4c4b-a5f7-1432dc4babe6
+        m_Path: <Keyboard>/3
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Phosphene Sim Toggle
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: -9206511917431456780, guid: ba47e8253eefe60409f20f9227ccc725,
+      type: 3}
+  edgeDetectionToggle:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Edge Detection Toggle
+      m_Type: 1
+      m_ExpectedControlType: Button
+      m_Id: fc171400-8e0b-4ab1-bc4a-21433a10e654
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: fc8c35c8-fddf-4714-babb-cbd71422e96a
+        m_Path: <Keyboard>/e
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Edge Detection Toggle
+        m_Flags: 0
+      - m_Name: 
+        m_Id: 5f6339da-8ddd-4ceb-9a3f-924e60ab4f6c
+        m_Path: <Keyboard>/2
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Edge Detection Toggle
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: -5890728516401609847, guid: ba47e8253eefe60409f20f9227ccc725,
+      type: 3}
+  iterateSurfaceReplacements:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Iterate Surface Replacements
+      m_Type: 1
+      m_ExpectedControlType: Button
+      m_Id: c920ba87-5cbb-4dff-b4f8-4436a8257ad1
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: cdb1f359-25e5-4b4a-9fc2-b1417090aa50
+        m_Path: <Keyboard>/t
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Iterate Surface Replacements
+        m_Flags: 0
+      - m_Name: 
+        m_Id: a2e1557a-b63b-4693-b486-7025e49f93fd
+        m_Path: <Keyboard>/1
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Iterate Surface Replacements
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 7050541269123429198, guid: ba47e8253eefe60409f20f9227ccc725,
+      type: 3}
+  camLocking:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Cam Locking
+      m_Type: 1
+      m_ExpectedControlType: Button
+      m_Id: 014d73d8-b77e-45c8-b568-2283d2860a84
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 16960638-ccb5-4e1d-a614-71103163d4a7
+        m_Path: <Keyboard>/c
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Cam Locking
+        m_Flags: 0
+      - m_Name: 
+        m_Id: cd87b495-aee1-472f-a0b5-7b2aa6e26610
+        m_Path: <Keyboard>/5
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Cam Locking
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: -6272797338585024812, guid: ba47e8253eefe60409f20f9227ccc725,
+      type: 3}
+  gazeLocking:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Gaze Locking
+      m_Type: 1
+      m_ExpectedControlType: Button
+      m_Id: 4d40792a-f166-4e62-9be6-3248b0a0712f
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings:
+      - m_Name: 
+        m_Id: 8010c6bf-d121-42e0-8892-4c2f6ff3200b
+        m_Path: <Keyboard>/g
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Gaze Locking
+        m_Flags: 0
+      - m_Name: 
+        m_Id: 45ed1023-7a36-47b1-a739-be9647a2a2c4
+        m_Path: <Keyboard>/4
+        m_Interactions: 
+        m_Processors: 
+        m_Groups: 
+        m_Action: Gaze Locking
+        m_Flags: 0
+      m_Flags: 0
+    m_Reference: {fileID: 4959758314703592880, guid: ba47e8253eefe60409f20f9227ccc725,
+      type: 3}
 --- !u!114 &1056693372
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5699,7 +5875,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1165371331
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5755,7 +5931,7 @@ GameObject:
   - component: {fileID: 1188367744}
   - component: {fileID: 1188367746}
   m_Layer: 5
-  m_Name: ToggleCamLock_btn
+  m_Name: ToggleGazeLock_btn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5863,7 +6039,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1188367744}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1707605394}
+        m_TargetAssemblyTypeName: Xarphos.Scripts.PhospheneSimulator, Assembly-CSharp
+        m_MethodName: ToggleGazeLocking
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1248194142
 GameObject:
   m_ObjectHideFlags: 0
@@ -6349,7 +6537,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1361028820}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1707605394}
+        m_TargetAssemblyTypeName: Xarphos.Scripts.PhospheneSimulator, Assembly-CSharp
+        m_MethodName: TogglePhospheneSim
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1521877075
 GameObject:
   m_ObjectHideFlags: 0
@@ -6843,7 +7043,7 @@ GameObject:
   - component: {fileID: 1779254154}
   - component: {fileID: 1779254156}
   m_Layer: 5
-  m_Name: Unused_btn
+  m_Name: ToggleCamLock_btn
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6951,7 +7151,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1779254154}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 1707605394}
+        m_TargetAssemblyTypeName: Xarphos.Scripts.PhospheneSimulator, Assembly-CSharp
+        m_MethodName: ToggleCamLocking
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!1 &1784416330
 GameObject:
   m_ObjectHideFlags: 0
@@ -7477,7 +7689,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Toggle Camera Lock
+  m_text: Toggle Gaze Lock
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
