@@ -6032,6 +6032,19 @@ MonoBehaviour:
       m_Flags: 0
     m_Reference: {fileID: 7050541269123429198, guid: ba47e8253eefe60409f20f9227ccc725,
       type: 3}
+  iterateEyeTrackingState:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Iterate Eye Tracking State
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 5bf79a78-ae15-4210-b1d3-7ab464084d3b
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 7305902790782627833, guid: ba47e8253eefe60409f20f9227ccc725,
+      type: 3}
   camLocking:
     m_UseReference: 1
     m_Action:
@@ -7929,8 +7942,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetCamera: {fileID: 1707605385}
   manualEyePos: 0
+  eyeTrackingCondition: 0
   surfaceReplacementMode: 0
   resolution: {x: 512, y: 512}
+  FOV: {x: 110, y: 110}
   phospheneConfigFile: Assets/Xarphos/SharedWork/PhospheneConfigurations/cfg2.json
   phospheneShader: {fileID: 4800000, guid: b6e3fff5a865bd14a886e48169b91ba8, type: 3}
   imageProcessingShader: {fileID: 4800000, guid: cd5097e322e231342bd3eb75d7405a0c,

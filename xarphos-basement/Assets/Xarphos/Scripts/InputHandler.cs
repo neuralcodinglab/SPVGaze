@@ -68,6 +68,16 @@ namespace Xarphos.Scripts
             set => SetInputActionProperty(ref iterateSurfaceReplacements, value);
         }
         [SerializeField]
+        private InputActionProperty iterateEyeTrackingState;
+        /// <summary>
+        /// The Input System action to use for iterating the different surface replacement shaders. Must be a <see cref="ButtonControl"/> Control.
+        /// </summary>
+        public InputActionProperty IterateEyeTrackingStateAction
+        {
+            get => iterateEyeTrackingState;
+            set => SetInputActionProperty(ref iterateEyeTrackingState, value);
+        }
+        [SerializeField]
         private InputActionProperty camLocking;
         /// <summary>
         /// The Input System action to use for locking the view to camera position. Must be a <see cref="ButtonControl"/> Control.
@@ -120,6 +130,7 @@ namespace Xarphos.Scripts
             TogglePhospheneSimulationAction.action.performed += simulator.TogglePhospheneSim;
             ToggleEdgeDetectionAction.action.performed += simulator.ToggleEdgeDetection;
             IterateSurfaceReplacementsAction.action.performed += simulator.NextSurfaceReplacementMode;
+            IterateEyeTrackingStateAction.action.performed += simulator.NextEyeTrackingCondition;
             LockToCameraAction.action.performed += simulator.ToggleCamLocking;
             LockToGazeAction.action.performed += simulator.ToggleGazeLocking;
         }
