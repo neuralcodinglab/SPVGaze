@@ -6118,8 +6118,8 @@ MonoBehaviour:
   m_Camera: {fileID: 1707605385}
   m_OriginBaseGameObject: {fileID: 1056693369}
   m_CameraFloorOffsetObject: {fileID: 303118323}
-  m_RequestedTrackingOriginMode: 0
-  m_CameraYOffset: 1.1176
+  m_RequestedTrackingOriginMode: 1
+  m_CameraYOffset: 1.2
 --- !u!4 &1056693373
 Transform:
   m_ObjectHideFlags: 0
@@ -6128,7 +6128,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1056693369}
   m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: -3, y: 0, z: -10}
+  m_LocalPosition: {x: -4.5, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -6914,7 +6914,7 @@ MonoBehaviour:
   m_BlockingObjects: 0
   m_BlockingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 1335
 --- !u!114 &1277636219
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7787,8 +7787,8 @@ Camera:
   m_GameObject: {fileID: 1707605383}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0, g: 0, b: 0, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -7809,13 +7809,13 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 2147483647
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
   m_TargetEye: 3
-  m_HDR: 1
-  m_AllowMSAA: 1
+  m_HDR: 0
+  m_AllowMSAA: 0
   m_AllowDynamicResolution: 0
   m_ForceIntoRT: 0
   m_OcclusionCulling: 1
@@ -7942,19 +7942,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetCamera: {fileID: 1707605385}
   manualEyePos: 0
+  _phospheneFiltering: 0
   eyeTrackingCondition: 0
   surfaceReplacementMode: 0
-  resolution: {x: 512, y: 512}
-  FOV: {x: 110, y: 110}
-  phospheneConfigFile: Assets/Xarphos/SharedWork/PhospheneConfigurations/cfg2.json
+  phospheneConfigFile: Assets/Xarphos/SharedWork/PhospheneConfigurations/cfg3.json
   phospheneShader: {fileID: 4800000, guid: b6e3fff5a865bd14a886e48169b91ba8, type: 3}
   imageProcessingShader: {fileID: 4800000, guid: cd5097e322e231342bd3eb75d7405a0c,
     type: 3}
   temporalDynamicsCs: {fileID: 7200000, guid: 331e3fffe80eab74ca2360f8c03122b8, type: 3}
   inputEffect: 1
-  intensityDecay: 0
-  traceIncrease: 0
-  traceDecay: 0
+  intensityDecay: 0.9
+  traceIncrease: 0.7
+  traceDecay: 0.5
 --- !u!114 &1707605395
 MonoBehaviour:
   m_ObjectHideFlags: 0
