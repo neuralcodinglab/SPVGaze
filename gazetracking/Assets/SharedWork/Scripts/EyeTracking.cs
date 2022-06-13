@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Assertions;
+using Valve.VR;
 using ViveSR.anipal;
 using ViveSR.anipal.Eye;
 using EyeFramework = ViveSR.anipal.Eye.SRanipal_Eye_Framework;
@@ -23,9 +24,13 @@ public class EyeTracking : MonoBehaviour
     
     private void Start()
     {
+        // Headset needs a few frames to register and initialise
+        // start register and check functions with a delay
+        // ToDo: Is there a "VR-Ready" Event to subscribe to?
         Invoke(nameof(SystemCheck), .5f);
         Invoke(nameof(RegisterCallback), .5f);
 
+        // find reference to simulator
         sim = GetComponent<PhospheneSimulator>();
     }
     
@@ -34,18 +39,24 @@ public class EyeTracking : MonoBehaviour
         if (!CheckFrameworkStatusErrors())
         {
             EyeTrackingAvailable = false;
-            // Debug.LogWarning("Framework Responded failure to work.");
+            Debug.LogWarning("Framework Responded failure to work.");
+            Release();
         }
     }
     
     private void Update()
     {
         FocusInfo focusInfo;
-        if (GetFocusPoint(GazeIndex.COMBINE, out focusInfo)) { }
-        else if (GetFocusPoint(GazeIndex.LEFT, out focusInfo)) { }
-        else if (GetFocusPoint(GazeIndex.RIGHT, out focusInfo)) { }
+        // try to get focus point from combined gaze origin
+        if (GetFocusPoint(GazeIndex.COMBINE, out focusInfo)) {}
+        // if that fails, try to get focus point using left eye
+        else if (GetFocusPoint(GazeIndex.LEFT, out focusInfo)) {}
+        // if left also fails try right eye
+        else if (GetFocusPoint(GazeIndex.RIGHT, out focusInfo)) {} 
+        // if all 3 have failed, don't update eye position
         else return;
 
+        // use focus point to update eye position on screen
         CalculateScreenEyePosition(focusInfo.point);
     }
 
@@ -56,13 +67,15 @@ public class EyeTracking : MonoBehaviour
         var rMat = sim.targetCamera.GetStereoNonJitteredProjectionMatrix(Camera.StereoscopicEye.Right);
         var cMat = sim.targetCamera.nonJitteredProjectionMatrix;
         // projection from world space into local space
-        var w2c = sim.targetCamera.worldToCameraMatrix;
-        // world space * w2c -> local space; local space * projection = clip space
-        var P4d = new Vector4(P.x, P.y, P.z, 1f); // 4th dimension necessary in graphics to get scale
-        var lProjection = lMat * w2c * P4d;
-        var rProjection = rMat * w2c * P4d;
-        var cProjection = rMat * w2c * P4d;
-        // scale and shift into view space
+        var world2cam = sim.targetCamera.worldToCameraMatrix;
+        // 4th dimension necessary in graphics to get scale
+        var P4d = new Vector4(P.x, P.y, P.z, 1f); 
+        // point in world space * world2cam -> local space point
+        // local space point * projection matrix = clip space point
+        var lProjection = lMat * world2cam * P4d;
+        var rProjection = rMat * world2cam * P4d;
+        var cProjection = cMat * world2cam * P4d;
+        // scale and shift from clip space [-1,1] into view space [0,1]
         var lViewSpace = (new Vector2(lProjection.x, lProjection.y) / lProjection.w) * .5f + .5f * Vector2.one;
         var rViewSpace = (new Vector2(rProjection.x, rProjection.y) / rProjection.w) * .5f + .5f * Vector2.one;
         var cViewSpace = (new Vector2(cProjection.x, cProjection.y) / cProjection.w) * .5f + .5f * Vector2.one;
@@ -71,7 +84,7 @@ public class EyeTracking : MonoBehaviour
         sim.SetEyePosition(lViewSpace, rViewSpace, cViewSpace);
     }
 
-    #region EyeData Callback & Registration
+    #region EyeData Callback: Registration & Clean-Up
     
     [MonoPInvokeCallback]
     private static void EyeCallback(ref EyeData_v2 eyeDataRef)
@@ -171,15 +184,11 @@ public class EyeTracking : MonoBehaviour
     #endregion
     
     /// <summary>
+    /// Adapted from SRanipal implementation. Rewritten to be more specific and thus more efficient.
     /// Casts a ray against all colliders when enable eye callback function.
     /// </summary>
     /// <param name="index">A source of eye gaze data.</param>
-    /// <param name="ray">The starting point and direction of the ray.</param>
     /// <param name="focusInfo">Information about where the ray focused on.</param>
-    /// <param name="radius">The radius of the gaze ray</param>
-    /// <param name="maxDistance">The max length of the ray.</param>
-    /// <param name="focusableLayer">A layer id that is used to selectively ignore object.</param>
-    /// <param name="eye_data">ViveSR.anipal.Eye.EyeData_v2. </param>
     /// <returns>Indicates whether the ray hits a collider.</returns>
     private bool GetFocusPoint(GazeIndex index, out FocusInfo focusInfo)
     {
@@ -217,50 +226,6 @@ public class EyeTracking : MonoBehaviour
             };
         }
 
-        return valid;
-    }
-    
-    /// <summary>
-    /// Gets the gaze ray of a source of eye gaze data when enable eye callback function.
-    /// </summary>
-    /// <param name="gazeIndex">The index of a source of eye gaze data.</param>
-    /// <param name="origin">The starting point of the ray in local coordinates.</param>
-    /// <param name="direction">Tthe direction of the ray.</param>
-    /// <param name="eye_data">ViveSR.anipal.Eye.EyeData_v2. </param>
-    /// <returns>Indicates whether the eye gaze data received is valid.</returns>
-    public static bool GetGazeRay(GazeIndex gazeIndex, out Ray ray, EyeData_v2 eye_data)
-    {
-        bool valid = false;
-        Vector3 origin= Vector3.zero, direction = Vector3.zero;
-        {
-            SingleEyeData[] eyesData = new SingleEyeData[(int)GazeIndex.COMBINE + 1];
-            eyesData[(int)GazeIndex.LEFT] = eye_data.verbose_data.left;
-            eyesData[(int)GazeIndex.RIGHT] = eye_data.verbose_data.right;
-            eyesData[(int)GazeIndex.COMBINE] = eye_data.verbose_data.combined.eye_data;
-
-            if (gazeIndex == GazeIndex.COMBINE)
-            {
-                valid = eyesData[(int)GazeIndex.COMBINE].GetValidity(SingleEyeDataValidity.SINGLE_EYE_DATA_GAZE_DIRECTION_VALIDITY);
-                if (valid)
-                {
-                    origin = eyesData[(int)GazeIndex.COMBINE].gaze_origin_mm * 0.001f;
-                    direction = eyesData[(int)GazeIndex.COMBINE].gaze_direction_normalized;
-                    direction.x *= -1;
-                }
-            }
-            else if (gazeIndex == GazeIndex.LEFT || gazeIndex == GazeIndex.RIGHT)
-            {
-                valid = eyesData[(int)gazeIndex].GetValidity(SingleEyeDataValidity.SINGLE_EYE_DATA_GAZE_DIRECTION_VALIDITY);
-                if (valid)
-                {
-                    origin = eyesData[(int)gazeIndex].gaze_origin_mm * 0.001f;
-                    direction = eyesData[(int)gazeIndex].gaze_direction_normalized;
-                    origin.x *= -1;
-                    direction.x *= -1;
-                }
-            }
-        }
-        ray = new Ray(origin, direction);
         return valid;
     }
 }

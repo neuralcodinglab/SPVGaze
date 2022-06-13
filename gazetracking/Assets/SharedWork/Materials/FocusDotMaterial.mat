@@ -78,6 +78,6 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _FocusDotColor: {r: 1, g: 0, b: 0, a: 0}
-    - _LeftEyePos: {r: 0.56918895, g: 0.48686498, b: 0, a: 0}
-    - _RightEyePos: {r: 0.5092282, g: 0.48669195, b: 0, a: 0}
+    - _LeftEyePos: {r: 0.40516767, g: 0.41122746, b: 0, a: 0}
+    - _RightEyePos: {r: 0.345163, g: 0.41106838, b: 0, a: 0}
   m_BuildTextureStacks: []
