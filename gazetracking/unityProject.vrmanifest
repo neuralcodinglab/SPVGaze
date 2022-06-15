@@ -2,13 +2,13 @@
   "source": "Unity",
   "applications": [
     {
-      "app_key": "application.generated.unity.so.many.tests.exe",
+      "app_key": "application.generated.unity.xarphosgazetracking.exe",
       "launch_type": "url",
       "url": "steam://launch/",
       "action_manifest_path": "C:\\Users\\Mo\\repos\\thesis\\gazetracking\\Assets\\StreamingAssets\\SteamVR\\actions.json",
       "strings": {
         "en_us": {
-          "name": "So.Many.Tests [Testing]"
+          "name": "Xarphos Gaze Tracking [Testing]"
         }
       }
     }

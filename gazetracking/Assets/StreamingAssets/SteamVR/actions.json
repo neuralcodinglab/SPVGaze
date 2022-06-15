@@ -1,11 +1,11 @@
 {
   "actions": [
     {
-      "name": "/actions/default/in/Trigger",
+      "name": "/actions/default/in/InteractUI",
       "type": "boolean"
     },
     {
-      "name": "/actions/default/in/PadClickNS",
+      "name": "/actions/default/in/Teleport",
       "type": "boolean"
     },
     {
@@ -81,6 +81,16 @@
       "name": "/actions/mixedreality/in/ExternalCamera",
       "type": "pose",
       "requirement": "optional"
+    },
+    {
+      "name": "/actions/gazetracking/in/Move",
+      "type": "vector2",
+      "requirement": "mandatory"
+    },
+    {
+      "name": "/actions/gazetracking/out/Haptics",
+      "type": "vibration",
+      "requirement": "mandatory"
     }
   ],
   "action_sets": [
@@ -98,6 +108,10 @@
     },
     {
       "name": "/actions/mixedreality",
+      "usage": "single"
+    },
+    {
+      "name": "/actions/gazetracking",
       "usage": "single"
     }
   ],
@@ -161,14 +175,15 @@
       "/actions/default/in/GrabGrip": "Grab Grip",
       "/actions/default/in/GrabPinch": "Grab Pinch",
       "/actions/default/in/HeadsetOnHead": "Headset on head (proximity sensor)",
+      "/actions/default/in/InteractUI": "Interact With UI",
       "/actions/default/in/Pose": "Pose",
       "/actions/default/in/SkeletonLeftHand": "Skeleton (Left)",
       "/actions/default/in/SkeletonRightHand": "Skeleton (Right)",
+      "/actions/default/in/Teleport": "Teleport",
       "/actions/default/out/Haptic": "Haptic",
       "/actions/platformer/in/Jump": "Jump",
       "/actions/default/in/SnapTurnLeft": "Snap Turn (Left)",
-      "/actions/default/in/SnapTurnRight": "Snap Turn (Right)",
-      "/actions/default/in/Trigger": "Trigger"
+      "/actions/default/in/SnapTurnRight": "Snap Turn (Right)"
     }
   ]
 }

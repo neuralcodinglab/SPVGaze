@@ -1,57 +1,117 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
+using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.XR;
-using UnityEngine.XR.Interaction.Toolkit;
+using UnityEngine.Assertions;
 using Valve.VR;
 
+[RequireComponent(typeof(XROrigin))]
 public class InputHandler : MonoBehaviour
 {
-    public XRController rightController;
-    public XRController leftController;
+    public float speed = 3f;
+    public bool forwardIsHeadRotation = true;
 
-    public bool useRightInput = true;
+    public GameObject leftWall, rightWall, startWall, endWall;
+    public Collider coll;
+    
+    [SerializeField] private LayerMask boxLayer;
+    [SerializeField] private LayerMask wallLayer;
 
-    private bool rightAvailable = true, leftAvailable = true;
+    private XROrigin xrOrigin;
+    private float xBoundLeft, xBoundRight, zBoundBack, zBoundForward;
 
     private void Start()
     {
-        if (rightController == null)
-        {
-            rightAvailable = false;
-            useRightInput = false;
-            Debug.LogWarning("InputHandler has no right controller assigned.");
-        }
+        xrOrigin = GetComponent<XROrigin>();
+        coll ??= GetComponent<Collider>();
 
-        if (leftController == null)
-        {
-            leftAvailable = false;
-            useRightInput = true;
-            Debug.LogWarning("InputHandler has no left controller assigned.");
-        }
-
-        if (!leftAvailable && !rightAvailable)
-        {
-            Debug.LogError("InputHandler has no controller assigned. Cannot process input.");
-        }
+        // calculate boundaries player may not cross
+        xBoundLeft = leftWall.GetComponent<Collider>().bounds.max.x + coll.bounds.extents.x;
+        xBoundRight = rightWall.GetComponent<Collider>().bounds.min.x - coll.bounds.extents.x;
+        zBoundBack = startWall.GetComponent<Collider>().bounds.max.z + coll.bounds.extents.z;
+        zBoundForward = endWall.GetComponent<Collider>().bounds.min.z - coll.bounds.extents.z;
+        
+        // coll.isTrigger = true;
+        // StartCoroutine(CheckInput());
     }
 
     private void Update()
     {
-        var controller = useRightInput ? rightController : leftController;
-        var primary = controller.inputDevice.TryGetFeatureValue(new InputFeatureUsage<Vector2>("Primary2DAxis"), out var inputPrimary);
-        var secondary = controller.inputDevice.TryGetFeatureValue(new InputFeatureUsage<Vector2>("Secondary2DAxis"), out var inputSecondary);
+        Move();
+    }
 
-        
-        
-        if (primary)
+    private void Move()
+    {
+        var hrz = Input.GetAxis("Horizontal");
+        var vrt = Input.GetAxis("Vertical");
+        var scale = Time.deltaTime * speed;
+        var move = new Vector3(hrz * scale, 0, vrt * scale);
+
+        if (forwardIsHeadRotation)
         {
-            Debug.Log($"Primary Input: {inputPrimary.x} ; {inputPrimary.y}");
+            var fwd = Vector3.forward;
+            var dir = xrOrigin.Camera.transform.forward;
+            dir.y = 0;
+            dir.Normalize();
+            var cos = Vector3.Dot(dir, fwd);
+            var sin = Vector3.Cross(dir, fwd).magnitude;
+
+            // apply rotation to align with camera forward vector
+            move = new Vector3(move.x * cos - move.z * sin, 0, move.x * sin + move.z * cos);
         }
-        if (secondary)
+
+        var newPos = xrOrigin.Origin.transform.localPosition + move;
+        // ensure new position stays within wall bounds
+        newPos.x = Mathf.Clamp(newPos.x, xBoundLeft, xBoundRight);
+        newPos.z = Mathf.Clamp(newPos.z, zBoundBack, zBoundForward);
+        
+        xrOrigin.Origin.transform.localPosition = newPos;
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        var oLayer = other.gameObject.layer;
+        // walked into box
+        if (boxLayer == (boxLayer | (1 << oLayer)))
         {
-            Debug.Log($"Primary Input: {inputSecondary.x} ; {inputSecondary.y}");
+            
+        }
+        // walked into wall
+        else if (wallLayer == (wallLayer | (1 << oLayer)))
+        {
+            var xPos = xrOrigin.Origin.transform.position.x;
+            float delta;
+            // colliding with left wall
+            if (xPos < 0)
+            {
+                var xBound = other.bounds.max.x;
+                var collX = coll.bounds.min.x;
+                delta = xBound - collX;
+            } // colliding with right wall
+            else
+            {
+                var xBound = other.bounds.min.x;
+                var collX = coll.bounds.max.x;
+                delta = collX - xBound;
+            }
+
+            // xrOrigin.Origin.transform.localPosition -= new Vector3(delta, 0, 0);
+        }
+    }
+
+    private IEnumerator CheckInput()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(1f);
+
+            var set = SteamVR_Actions.gazetracking.Move;
+
+            Debug.Log("Move Set Attributes:\n" +
+                      $"Is Active: {set.active}\n" + 
+                      $"Is Bound: {set.activeBinding}\n" + 
+                      $"Axis Value: {set.axis.x} / {set.axis.y}");
+            
         }
     }
 }
