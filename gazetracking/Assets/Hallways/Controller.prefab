@@ -117,10 +117,10 @@ MonoBehaviour:
   wallVibrationFrequency: 2
   boxLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 256
   wallLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 512
 --- !u!54 &2158976260251893498
 Rigidbody:
   m_ObjectHideFlags: 0

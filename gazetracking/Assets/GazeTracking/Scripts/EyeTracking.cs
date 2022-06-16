@@ -16,11 +16,11 @@ public class EyeTracking : MonoBehaviour
     [SerializeAs("Sphere Cast Radius")]public float spCastR = 0.01f;
     [SerializeAs("Sphere Cast Max Distance")]public float spCastDist = 20f;
     
-    private static EyeData_v2 eyeData;
-    private EyeParameter eye_parameter;
-    private bool eye_callback_registered;
+    private static EyeData_v2 _eyeData;
+    private EyeParameter eyeParameter;
+    private bool eyeCallbackRegistered;
     private PhospheneSimulator sim;
-    internal bool EyeTrackingAvailable { get; private set; }
+    internal bool eyeTrackingAvailable { get; private set; }
     
     private void Start()
     {
@@ -38,7 +38,7 @@ public class EyeTracking : MonoBehaviour
     {
         if (!CheckFrameworkStatusErrors())
         {
-            EyeTrackingAvailable = false;
+            eyeTrackingAvailable = false;
             Debug.LogWarning("Framework Responded failure to work.");
             Release();
         }
@@ -91,21 +91,21 @@ public class EyeTracking : MonoBehaviour
     {
         var eyeParameter = new EyeParameter();
         SRanipal_Eye_API.GetEyeParameter(ref eyeParameter);
-        eyeData = eyeDataRef;
+        _eyeData = eyeDataRef;
     }
 
     private void SystemCheck()
     {
         if (EyeFramework.Status == EyeFramework.FrameworkStatus.NOT_SUPPORT)
         {
-            EyeTrackingAvailable = false;
+            eyeTrackingAvailable = false;
             Debug.LogWarning("Eye Tracking Not Supported");
             return;
         }
         
 
-        var eyeDataResult = SRanipal_Eye_API.GetEyeData_v2(ref eyeData);
-        var eyeParamResult = SRanipal_Eye_API.GetEyeParameter(ref eye_parameter);
+        var eyeDataResult = SRanipal_Eye_API.GetEyeData_v2(ref _eyeData);
+        var eyeParamResult = SRanipal_Eye_API.GetEyeParameter(ref eyeParameter);
         var resultEyeInit = SRanipal_API.Initial(SRanipal_Eye_v2.ANIPAL_TYPE_EYE_V2, IntPtr.Zero);
         
         if (
@@ -119,11 +119,11 @@ public class EyeTracking : MonoBehaviour
                            $"[SRanipal] Eye Param Call v2: {eyeParamResult}" +
                            $"[SRanipal] Initial Eye v2   : {resultEyeInit}"
             );
-            EyeTrackingAvailable = false;
+            eyeTrackingAvailable = false;
             return;
         }
 
-        EyeTrackingAvailable = true;
+        eyeTrackingAvailable = true;
     }
 
     private void RegisterCallback()
@@ -131,20 +131,20 @@ public class EyeTracking : MonoBehaviour
         var eyeParameter = new EyeParameter();
         SRanipal_Eye_API.GetEyeParameter(ref eyeParameter);
 
-        if (SRanipal_Eye_Framework.Instance.EnableEyeDataCallback && !eye_callback_registered)
+        if (SRanipal_Eye_Framework.Instance.EnableEyeDataCallback && !eyeCallbackRegistered)
         {
             SRanipal_Eye_v2.WrapperRegisterEyeDataCallback(
                 Marshal.GetFunctionPointerForDelegate((SRanipal_Eye_v2.CallbackBasic)EyeCallback)
             );
-            eye_callback_registered = true;
+            eyeCallbackRegistered = true;
         }
 
-        else if (!SRanipal_Eye_Framework.Instance.EnableEyeDataCallback && eye_callback_registered)
+        else if (!SRanipal_Eye_Framework.Instance.EnableEyeDataCallback && eyeCallbackRegistered)
         {
             SRanipal_Eye_v2.WrapperUnRegisterEyeDataCallback(
                 Marshal.GetFunctionPointerForDelegate((SRanipal_Eye_v2.CallbackBasic)EyeCallback)
             );
-            eye_callback_registered = false;
+            eyeCallbackRegistered = false;
         }
     }
     
@@ -168,12 +168,12 @@ public class EyeTracking : MonoBehaviour
     /// </summary>
     private void Release()
     {
-        if (eye_callback_registered)
+        if (eyeCallbackRegistered)
         {
             SRanipal_Eye_v2.WrapperUnRegisterEyeDataCallback(
                 Marshal.GetFunctionPointerForDelegate((SRanipal_Eye_v2.CallbackBasic)EyeCallback)
             );
-            eye_callback_registered = false;
+            eyeCallbackRegistered = false;
         }
     }
     
@@ -194,9 +194,9 @@ public class EyeTracking : MonoBehaviour
     {
         SingleEyeData eye_data = index switch
         {
-            GazeIndex.LEFT => eyeData.verbose_data.left,
-            GazeIndex.RIGHT => eyeData.verbose_data.right,
-            GazeIndex.COMBINE => eyeData.verbose_data.combined.eye_data,
+            GazeIndex.LEFT => _eyeData.verbose_data.left,
+            GazeIndex.RIGHT => _eyeData.verbose_data.right,
+            GazeIndex.COMBINE => _eyeData.verbose_data.combined.eye_data,
             _ => throw new ArgumentOutOfRangeException(nameof(index), index, null)
         };
         bool valid = eye_data.GetValidity(SingleEyeDataValidity.SINGLE_EYE_DATA_GAZE_DIRECTION_VALIDITY);

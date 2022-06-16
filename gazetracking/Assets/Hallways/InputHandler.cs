@@ -16,9 +16,14 @@ public class InputHandler : MonoBehaviour
     
     [SerializeField] private LayerMask boxLayer;
     [SerializeField] private LayerMask wallLayer;
+    [SerializeField] private LayerMask checkpointLayer;
 
     private XROrigin xrOrigin;
     private float xBoundLeft, xBoundRight, zBoundBack, zBoundForward;
+
+    private int inZone = 0;
+    private bool crossingCheckpoint = false;
+    private float checkpointPos = 0;
 
     private void Start()
     {
@@ -76,26 +81,30 @@ public class InputHandler : MonoBehaviour
         {
             
         }
-        // walked into wall
-        else if (wallLayer == (wallLayer | (1 << oLayer)))
+        // walked into a checkpoint
+        else if (checkpointLayer == (checkpointLayer | (1 << oLayer)))
         {
-            var xPos = xrOrigin.Origin.transform.position.x;
-            float delta;
-            // colliding with left wall
-            if (xPos < 0)
-            {
-                var xBound = other.bounds.max.x;
-                var collX = coll.bounds.min.x;
-                delta = xBound - collX;
-            } // colliding with right wall
-            else
-            {
-                var xBound = other.bounds.min.x;
-                var collX = coll.bounds.max.x;
-                delta = collX - xBound;
-            }
+            // starting to cross checkpoint
+            crossingCheckpoint = true;
+            checkpointPos = other.transform.position.z;
+        }
+    }
 
-            // xrOrigin.Origin.transform.localPosition -= new Vector3(delta, 0, 0);
+    private void OnTriggerExit(Collider other)
+    {
+        var oLayer = other.gameObject.layer;
+        if (checkpointLayer == (checkpointLayer | (1 << oLayer)))
+        {
+            // starting to cross checkpoint
+            crossingCheckpoint = false;
+            if (transform.position.z > checkpointPos)
+            {
+                inZone += 1;
+            }
+            else // went backwards
+            {
+                
+            }
         }
     }
 
