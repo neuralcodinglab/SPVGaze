@@ -885,7 +885,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1707266662751158, guid: f676e25d0fcd1ec4fa22af3017316de9, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4879914434278830, guid: f676e25d0fcd1ec4fa22af3017316de9, type: 3}
       propertyPath: m_RootOrder
@@ -7961,22 +7961,16 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1707605383}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7e6fb78bd046e54dbc6ec6200589850, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  DebugGazeRays: 0
-  DebugGazeCalcs: 0
-  MinGazeDistText: {fileID: 891142771}
-  LeftOriginText: {fileID: 522179971}
-  RightOriginText: {fileID: 2145510051}
-  CombOriginText: {fileID: 1314107705}
-  focusCastRadiusText: {fileID: 1364656685}
-  GazePointText: {fileID: 1848563660}
   HallwayLayerMask:
     serializedVersion: 2
     m_Bits: 256
+  spCastR: 0.01
+  spCastDist: 20
 --- !u!1 &1739413830
 GameObject:
   m_ObjectHideFlags: 0
