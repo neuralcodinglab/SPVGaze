@@ -141,7 +141,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &56536870
 Transform:
   m_ObjectHideFlags: 0
@@ -7803,7 +7803,7 @@ Camera:
     height: 1
   near clip plane: 0.01
   far clip plane: 1000
-  field of view: 60
+  field of view: 103.7
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -7951,9 +7951,9 @@ MonoBehaviour:
     type: 3}
   temporalDynamicsCs: {fileID: 7200000, guid: 331e3fffe80eab74ca2360f8c03122b8, type: 3}
   inputEffect: 1
-  intensityDecay: 0.9
-  traceIncrease: 0.7
-  traceDecay: 0.5
+  intensityDecay: 0
+  traceIncrease: 0
+  traceDecay: 0
 --- !u!114 &1707605395
 MonoBehaviour:
   m_ObjectHideFlags: 0
