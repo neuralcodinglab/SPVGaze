@@ -4,8 +4,8 @@ Shader "Xarphos/FocusDotShader"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _FocusDotColor ("_FocusDotColor", COLOR) = (1., 0., 0., 0.)
-        _LeftEyePos ("_LeftEyePos", Vector) = (.5, .5, 0, 0)
-        _RightEyePos ("_RightEyePos", Vector) = (.5, .5, 0, 0)
+        _EyePositionLeft ("_EyePositionLeft", Vector) = (.5, .5, 0, 0)
+        _EyePositionRight ("_EyePositionRight", Vector) = (.5, .5, 0, 0)
     }
     
     SubShader
@@ -36,9 +36,10 @@ Shader "Xarphos/FocusDotShader"
             };
 
             UNITY_DECLARE_SCREENSPACE_TEXTURE(_MainTex);
-            fixed2 _LeftEyePos;
-            fixed2 _RightEyePos;
+            fixed2 _EyePositionLeft;
+            fixed2 _EyePositionRight;
             fixed4 _FocusDotColor;
+            uint do_render_dot;
 
             v2f vert (appdata v)
             {
@@ -60,10 +61,10 @@ Shader "Xarphos/FocusDotShader"
                 // sample the texture
                 const fixed4 col = UNITY_SAMPLE_SCREENSPACE_TEXTURE(_MainTex, i.uv);
 
-                const fixed2 eye_pos = lerp(_LeftEyePos, _RightEyePos, unity_StereoEyeIndex);
-                const int is_on_eye_pos = distance(i.uv, eye_pos.xy) < 0.002;
+                const fixed2 eye_pos = lerp(_EyePositionLeft, _EyePositionRight, unity_StereoEyeIndex);
+                const uint is_on_eye_pos = distance(i.uv, eye_pos.xy) < 0.002;
                 
-                return lerp(col, _FocusDotColor, is_on_eye_pos);
+                return lerp(col, _FocusDotColor, is_on_eye_pos * do_render_dot);
             }
             ENDCG
         }

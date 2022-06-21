@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: FocusDotMaterial
-  m_Shader: {fileID: 4800000, guid: 8996b674285ee4e4faf7e303fefe0fac, type: 3}
+  m_Name: EdgeDetectionMaterial
+  m_Shader: {fileID: 4800000, guid: 215c480f7ce59174eb01b6853bed900b, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
@@ -77,9 +77,5 @@ Material:
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _EyePositionLeft: {r: 0.50000226, g: 0.5000008, b: 0, a: 0}
-    - _EyePositionRight: {r: 0.4400229, g: 0.49982533, b: 0, a: 0}
-    - _FocusDotColor: {r: 1, g: 0, b: 0, a: 0}
-    - _LeftEyePos: {r: 0.40516767, g: 0.41122746, b: 0, a: 0}
-    - _RightEyePos: {r: 0.345163, g: 0.41106838, b: 0, a: 0}
+    - resolution: {r: 2704, g: 3004, b: 0, a: 0}
   m_BuildTextureStacks: []

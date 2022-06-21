@@ -170,6 +170,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Ceiling
       objectReference: {fileID: 0}
+    - target: {fileID: 2226769195892156740, guid: 337f454045fa253448f208c6c877dd98, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7138550478261907670, guid: 337f454045fa253448f208c6c877dd98, type: 3}
       propertyPath: m_RootOrder
       value: 1

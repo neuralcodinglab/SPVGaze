@@ -1,0 +1,126 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CalculateActivations
+#pragma kernel SpreadActivations
+#pragma kernel CleanActivations
+
+struct Phosphene
+{
+  float2 position;
+  float size;
+  float2 activation;
+  float2 trace;
+};
+
+uint2 resolution;
+int gazeAssisted;
+int gazeLocked;
+float2 _EyePositionLeft;
+float2 _EyePositionRight;
+float2 _LeftEyeCenter;
+float2 _RightEyeCenter;
+
+float input_effect;     // The factor by which stimulation accumulates to phosphene activation
+float intensity_decay;  // The factor by which previous activation still influences current activation
+float trace_increase;   // The habituation strength: the factor by which stimulation leads to buildup of memory trace
+float trace_decay;      // The factor by which the stimulation memory trace decreases
+
+RWStructuredBuffer<Phosphene> phosphenes;
+
+Texture2DArray<float4> InputTex;
+RWTexture2DArray<float4> ActivationTex;
+RWTexture2DArray<float4> SimulationTex;
+
+
+[numthreads(32,1,2)]
+void CalculateActivations (uint3 id : SV_DispatchThreadID)
+{
+  uint phosIdx = id.x;
+  uint eyeIdx = id.z;
+
+  float2 eyePos = lerp(_EyePositionLeft, _EyePositionRight, eyeIdx);
+  float2 eyeCenter = lerp(_LeftEyeCenter, _RightEyeCenter, eyeIdx);
+
+  // if gaze assist is set to 1 (on), adjust sample position to eye position
+  // calculate corrected phosphene position
+  float2 samplePosition = phosphenes[phosIdx].position - 0.5
+      + (gazeAssisted * eyePos)           // With gaze assisted sampling, center around current eye position
+      + ((1 - gazeAssisted) * eyeCenter); // Without center around eye center calculated at the start of the programme
+
+  // Read stimulation value from activation mask
+  uint2 index = uint2((uint)(samplePosition.x * resolution.x), (uint)(samplePosition.y * resolution.y));
+  float stim = InputTex[uint3(index, eyeIdx)].x;
+  
+  // Compute phosphene activation as function of previous activation and stimulation
+  float actv = phosphenes[phosIdx].activation[eyeIdx];
+  phosphenes[phosIdx].activation[eyeIdx] = max(0, intensity_decay*actv + input_effect * (stim - phosphenes[phosIdx].trace[eyeIdx]));
+  phosphenes[phosIdx].trace[eyeIdx] = trace_decay*phosphenes[phosIdx].trace[eyeIdx] + trace_increase * stim;
+
+  // ToDo: adjust for eye offset; .5,.5 on 2D screen needs to be transformed to eye space?
+  samplePosition = phosphenes[phosIdx].position - 0.5
+      + (gazeLocked * eyePos)           // With gaze assisted sampling, center around current eye position
+      + ((1 - gazeLocked) * eyeCenter); // Without center around eye center calculated at the start of the programme
+  uint2 idx = uint2((uint)(samplePosition.x * resolution.x), (uint)(samplePosition.y * resolution.y));
+  ActivationTex[uint3(idx, eyeIdx)] =  float4(actv, actv, actv, phosphenes[phosIdx].size);
+}
+
+float Gaussian(float d, float sigma)
+{
+  float c = 1.0 / (sigma * 2.50662);
+  return c * exp( -(d * d) / (2 * sigma * sigma) );
+}
+
+#define xThreads 16
+#define yThreads 32
+
+[numthreads(xThreads,yThreads,2)]
+void SpreadActivations(uint3 id : SV_DispatchThreadID)
+{
+  // ToDo: figure out why radius is bonkers (scale wrong?)
+
+  // get activation data from texture storage
+  float4 pixel = ActivationTex[uint3(id.xy, id.z)];
+  const float size = pixel.w;
+  const float actv = pixel.x;
+  // const float actvR = pixelR.x;
+  // if it's a pixel without activation or radius, we are done
+  if (size < 0.001 || actv < 0.001) { return; }
+
+  SimulationTex[uint3(id.xy, id.z)] = float4(actv, actv, actv, 1);
+  
+  const float scale = Gaussian(0, size * 2.0);
+  const float size_scale = 10;
+
+  const uint max_r = size * resolution.x / size_scale;
+  const uint maxr2 = max_r * max_r;
+  
+  for (uint xOff=0; xOff < max_r; xOff++)
+  {
+    for (uint yOff=0; yOff < max_r; yOff++)
+    {
+      // don't overwrite centre
+      if (xOff + yOff == 0)
+        continue;
+      // if we are past radius, move to next x-location
+      if ((yOff*yOff + xOff*xOff) >= maxr2)
+        break;
+
+      // calculate spread according to gaussian
+      float dist = sqrt( (xOff*xOff) / (resolution.x * resolution.x)
+        + (yOff*yOff) / (resolution.y * resolution.y) );
+
+      // spread left eye
+      float spread = actv * Gaussian(dist, size * 2.0) / scale;
+      SimulationTex[uint3(id.x + xOff, id.y + yOff, id.z)] += float4(0, spread, id.z, 0);
+      SimulationTex[uint3(id.x - xOff, id.y + yOff, id.z)] += float4(0, spread, id.z, 0);
+      SimulationTex[uint3(id.x + xOff, id.y - yOff, id.z)] += float4(0, spread, id.z, 0);
+      SimulationTex[uint3(id.x - xOff, id.y - yOff, id.z)] += float4(0, spread, id.z, 0);
+    }
+  }
+}
+
+[numthreads(xThreads,yThreads,2)]
+void CleanActivations(uint3 id : SV_DispatchThreadID)
+{
+  ActivationTex[id] = float4(0,0,0,0);
+  SimulationTex[id] = float4(0,0,0,1);
+}
