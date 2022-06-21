@@ -7941,12 +7941,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   targetCamera: {fileID: 1707605385}
-  manualEyePos: 0
+  setManualEyePos: 1
+  ManualEyePos: {x: 0.5, y: 0.5}
   _phospheneFiltering: 0
   eyeTrackingCondition: 0
   surfaceReplacementMode: 5
   phospheneConfigFile: Assets/Xarphos/SharedWork/PhospheneConfigurations/cfg3.json
-  phospheneShader: {fileID: 4800000, guid: b6e3fff5a865bd14a886e48169b91ba8, type: 3}
   imageProcessingShader: {fileID: 4800000, guid: cd5097e322e231342bd3eb75d7405a0c,
     type: 3}
   temporalDynamicsCs: {fileID: 7200000, guid: 331e3fffe80eab74ca2360f8c03122b8, type: 3}

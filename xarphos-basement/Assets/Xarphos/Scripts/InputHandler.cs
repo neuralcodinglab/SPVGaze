@@ -127,12 +127,10 @@ namespace Xarphos.Scripts
             MoveAction.action.canceled += Move;
             RotateAction.action.performed += Rotate;
             RotateAction.action.canceled += Rotate;
-            TogglePhospheneSimulationAction.action.performed += simulator.TogglePhospheneSim;
             ToggleEdgeDetectionAction.action.performed += simulator.ToggleEdgeDetection;
+            TogglePhospheneSimulationAction.action.performed += simulator.TogglePhospheneSim;
             IterateSurfaceReplacementsAction.action.performed += simulator.NextSurfaceReplacementMode;
             IterateEyeTrackingStateAction.action.performed += simulator.NextEyeTrackingCondition;
-            LockToCameraAction.action.performed += simulator.ToggleCamLocking;
-            LockToGazeAction.action.performed += simulator.ToggleGazeLocking;
         }
 
         private void Update()
