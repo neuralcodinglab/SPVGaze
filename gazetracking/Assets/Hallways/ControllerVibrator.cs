@@ -7,6 +7,7 @@ using UnityEngine.XR.Interaction.Toolkit;
 public class ControllerVibrator : MonoBehaviour
 {
     public XRController controller;
+    [Range(0.01f, 0.99f)]
     public float amplitude = .7f;
 
     public float boxVibrationFrequency = 5f;
@@ -14,6 +15,9 @@ public class ControllerVibrator : MonoBehaviour
     
     [SerializeField] private LayerMask boxLayer;
     [SerializeField] private LayerMask wallLayer;
+
+    private bool externalVibrationOn = false;
+    private float oldAmp = float.NegativeInfinity;
 
     private void Start()
     {
@@ -23,6 +27,30 @@ public class ControllerVibrator : MonoBehaviour
             Debug.LogWarning("Found no controller in parent;");
             gameObject.SetActive(false);
         }
+        GetComponentInParent<InputHandler>().RegisterControllerReference(this, transform.parent.name.ToLower().StartsWith("right"));
+    }
+
+    public void ExternalVibrationStart(float frequency, float amplitude=.7f)
+    {
+        externalVibrationOn = true;
+        if (amplitude is > 0.0f and < 1.0f)
+        {
+            oldAmp = amplitude;
+            this.amplitude = amplitude;
+        }
+
+        StartCoroutine(VibrationPattern(frequency));
+    }
+    public void ExternalVibrationStop()
+    {
+        externalVibrationOn = false;
+        if (oldAmp is > 0.0f and < 1.0f)
+        {
+            amplitude = oldAmp;
+            oldAmp = float.PositiveInfinity;
+        }
+
+        StopAllCoroutines();
     }
 
     private IEnumerator VibrationPattern(float frequency)

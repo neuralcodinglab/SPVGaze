@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using UnityEngine;
 using UnityEngine.XR;
 using Xarphos.Scripts;
@@ -29,8 +30,10 @@ public class PhospheneSimulator : MonoBehaviour
     [SerializeField] private SurfaceReplacement.ReplacementModes currentSurfaceReplacement;
 
     // Phosphene Configs
+    [Header("Phosphene Config")]
+    public bool initialiseFromFile;
     [SerializeField] private string phospheneConfigFile;
-    private Phosphene[] phosphenes;
+    private PhospheneConfig phospheneCfg;
     private int nPhosphenes;
     private ComputeBuffer phospheneBuffer;
     
@@ -72,10 +75,18 @@ public class PhospheneSimulator : MonoBehaviour
         kernelClean = simulationCS.FindKernel("CleanActivations");
         
         // Initialize the array of phosphenes
-        phosphenes = PhospheneConfig.InitPhosphenesFromJSON(phospheneConfigFile);
-        nPhosphenes = phosphenes.Length;
+        if (initialiseFromFile && phospheneConfigFile != null)
+        {
+            try
+            {
+                phospheneCfg = PhospheneConfig.InitPhosphenesFromJSON(phospheneConfigFile);
+            } catch (FileNotFoundException){ }
+        }
+        // if boolean is false, the file path is not given or the initialising from file failed, initialise probabilistic
+        phospheneCfg ??= PhospheneConfig.InitPhosphenesProbabilistically(1000, .3f, PhospheneConfig.Monopole);
+        nPhosphenes = phospheneCfg.phosphenes.Length;
         phospheneBuffer = new ComputeBuffer(nPhosphenes, sizeof(float)*7);
-        phospheneBuffer.SetData(phosphenes);
+        phospheneBuffer.SetData(phospheneCfg.phosphenes);
         simulationCS.SetBuffer(kernelActivations, ShPrPhospheneBuffer, phospheneBuffer);
         
         // Set the compute shader with the temporal dynamics variables

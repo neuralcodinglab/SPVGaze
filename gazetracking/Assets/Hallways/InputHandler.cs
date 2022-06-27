@@ -1,9 +1,5 @@
-using System;
-using System.Collections;
 using Unity.XR.CoreUtils;
 using UnityEngine;
-using UnityEngine.Assertions;
-using Valve.VR;
 
 [RequireComponent(typeof(XROrigin))]
 public class InputHandler : MonoBehaviour
@@ -21,23 +17,30 @@ public class InputHandler : MonoBehaviour
     private XROrigin xrOrigin;
     private float xBoundLeft, xBoundRight, zBoundBack, zBoundForward;
 
+    private ControllerVibrator rightController, leftController;
+
+    // checkpoint tracking
     private int inZone = 0;
     private bool crossingCheckpoint = false;
-    private float checkpointPos = 0;
+    private bool checkpointInFrontOnEnter;
+    private int checkpointID = int.MaxValue;
+    
+    // box collision tracking
+    private bool inBox = false;
+    private int collisionCount = 0;
 
+    
     private void Start()
     {
         xrOrigin = GetComponent<XROrigin>();
         coll ??= GetComponent<Collider>();
+        coll.isTrigger = true;
 
         // calculate boundaries player may not cross
         xBoundLeft = leftWall.GetComponent<Collider>().bounds.max.x + coll.bounds.extents.x;
         xBoundRight = rightWall.GetComponent<Collider>().bounds.min.x - coll.bounds.extents.x;
         zBoundBack = startWall.GetComponent<Collider>().bounds.max.z + coll.bounds.extents.z;
         zBoundForward = endWall.GetComponent<Collider>().bounds.min.z - coll.bounds.extents.z;
-        
-        // coll.isTrigger = true;
-        // StartCoroutine(CheckInput());
     }
 
     private void Update()
@@ -73,54 +76,96 @@ public class InputHandler : MonoBehaviour
         xrOrigin.Origin.transform.localPosition = newPos;
     }
 
+    private bool IsLayerInLayerMask(LayerMask mask, int layer) => mask == (mask | (1 << layer));
+    private bool LayerInBoxMask(int layer) => IsLayerInLayerMask(boxLayer, layer);
+    private bool LayerInCheckpointMask(int layer) => IsLayerInLayerMask(checkpointLayer, layer);
+
+    private void StartCollisionVibration()
+    {
+        if (leftController != null)
+            leftController.ExternalVibrationStart(120);
+        if (rightController != null)
+            rightController.ExternalVibrationStart(120);
+    }
+    private void StopCollisionVibration()
+    {
+        if (leftController != null)
+            leftController.ExternalVibrationStop();
+        if (rightController != null)
+            rightController.ExternalVibrationStop();
+    }
+    
     private void OnTriggerEnter(Collider other)
     {
         var oLayer = other.gameObject.layer;
         // walked into box
-        if (boxLayer == (boxLayer | (1 << oLayer)))
+        if (LayerInBoxMask(oLayer))
         {
+            if (inBox)
+            {
+                Debug.LogWarning("Walked into a box, while we thought we are in a box.");
+            }
+            inBox = true;
+            collisionCount += 1;
             
+            // start vibration pattern
+            StartCollisionVibration();
         }
         // walked into a checkpoint
-        else if (checkpointLayer == (checkpointLayer | (1 << oLayer)))
+        else if (LayerInCheckpointMask(oLayer))
         {
             // starting to cross checkpoint
             crossingCheckpoint = true;
-            checkpointPos = other.transform.position.z;
+            if (checkpointID != int.MaxValue)
+            {
+                Debug.LogWarning("Checkpoint ID was not reset correctly.");
+            }
+            checkpointID = other.GetInstanceID();
+            checkpointInFrontOnEnter = Mathf.Sign(other.transform.position.z - transform.position.z) > 0;
         }
     }
 
     private void OnTriggerExit(Collider other)
     {
         var oLayer = other.gameObject.layer;
-        if (checkpointLayer == (checkpointLayer | (1 << oLayer)))
+        if (LayerInBoxMask(oLayer))
         {
-            // starting to cross checkpoint
-            crossingCheckpoint = false;
-            if (transform.position.z > checkpointPos)
+            inBox = false;
+            // stop vibration pattern
+            StopCollisionVibration();
+        }
+        else if (LayerInCheckpointMask(oLayer))
+        {
+            checkpointID = int.MaxValue;
+            if (other.GetInstanceID() != checkpointID)
             {
-                inZone += 1;
+                Debug.LogWarning("Exited a Checkpoint with a different ID than last entered. What?");
+                checkpointID = int.MaxValue;
+                return;
             }
-            else // went backwards
+
+            var checkpointIsBehind = Mathf.Sign(other.transform.position.z - transform.position.z) < 0;
+            switch (checkpointInFrontOnEnter)
             {
-                
+                // moved forward in the hallway
+                case true when checkpointIsBehind:
+                    inZone += 1;
+                    break;
+                // moved backwards through checkpoint
+                case false when !checkpointIsBehind:
+                    inZone -= 1;
+                    break;
+                default:
+                    break; // did not cross, but entered and moved back out            
             }
         }
     }
 
-    private IEnumerator CheckInput()
+    public void RegisterControllerReference(ControllerVibrator controller, bool isRight)
     {
-        while (true)
-        {
-            yield return new WaitForSeconds(1f);
-
-            var set = SteamVR_Actions.gazetracking.Move;
-
-            Debug.Log("Move Set Attributes:\n" +
-                      $"Is Active: {set.active}\n" + 
-                      $"Is Bound: {set.activeBinding}\n" + 
-                      $"Axis Value: {set.axis.x} / {set.axis.y}");
-            
-        }
+        if (isRight)
+            rightController = controller;
+        else
+            leftController = controller;
     }
 }
