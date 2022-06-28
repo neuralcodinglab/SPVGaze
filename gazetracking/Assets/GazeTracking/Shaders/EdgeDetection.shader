@@ -44,7 +44,7 @@
             UNITY_DECLARE_SCREENSPACE_TEXTURE(_MainTex);
             float4 _MainTex_ST;
 
-            int2 resolution;
+            int2 screenResolution;
 
 
             VertexData vertex_program(AppData inputs)
@@ -64,7 +64,7 @@
                 // Sobel Edge detection
                 // sample the texture
         		float2 offsets[9];
-        		GetOffsets3x3(resolution.x, resolution.y, offsets);
+        		GetOffsets3x3(screenResolution.x, screenResolution.y, offsets);
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(inputs);
 
         		fixed3 textures[9];

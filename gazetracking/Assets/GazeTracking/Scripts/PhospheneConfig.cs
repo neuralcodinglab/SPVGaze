@@ -4,12 +4,12 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using MathNet.Numerics;
+using MathNet.Numerics.Distributions;
 using MathNet.Numerics.Random;
 
 
 namespace Xarphos.Scripts
 {
-
   public struct Phosphene
   {
     public Vector2 position;
@@ -49,7 +49,7 @@ namespace Xarphos.Scripts
       
       public static PhospheneConfig load(string filename)
       {
-        string json = System.IO.File.ReadAllText(filename);
+        string json = File.ReadAllText(filename);
         return JsonUtility.FromJson<PhospheneConfig>(json);
       }
 
@@ -129,6 +129,7 @@ namespace Xarphos.Scripts
         }).ToArray();
 
         // generate a uniform variable in [0,1) for each phosphene to determine eccentricity & angle from
+        // var randomVals = SystemRandomSource.Doubles(nPhosphenes * 2, DateTime.Now.Millisecond); //BitConverter.ToInt32(Encoding.UTF8.GetBytes("penis"), 0));
         var randomVals = SystemRandomSource.Doubles(nPhosphenes * 2, BitConverter.ToInt32(Encoding.UTF8.GetBytes("penis"), 0));
           
         for (int i =0; i<nPhosphenes; i++)
@@ -148,7 +149,7 @@ namespace Xarphos.Scripts
 
           var ecc = validEcc[idx];
           config.eccentricities[i] = (float)ecc;
-          var theta = Math.PI * 2 * randomVals[idx + nPhosphenes];
+          var theta = Math.PI * 2 * randomVals[i + nPhosphenes];
           
           // calculate cartesian coordinates of phosphene in [0,1] ; eccentricities have fovea at 0,0
           // so move coordinates by 60 to and scale by 120 to get relative position
@@ -161,7 +162,7 @@ namespace Xarphos.Scripts
 
           // eccentricity scaling function is in activated cortex area per degrees of visual angle ([mm^2]/[degrees])
           // taking the inverse to get visual angle per cortex area activation
-          var magnification = 1.0 / eccentricityScaling(new double[] { ecc })[0];
+          var magnification = 1.0 / eccentricityScaling(new [] { ecc })[0];
           // approximating cortex activation with an average stimulation strength to calculate size
           double avgStim = 30; // micro ampere, stimulation can range from 20-60 μA
           // according to Tehovnik, 2007, Depth-dependent detection of microampere currents delivered to monkey V1
@@ -172,7 +173,51 @@ namespace Xarphos.Scripts
 
           config.phosphenes[i] = p;
         }
+
+        config.PhosphenesToPicture();
         return config;
+      }
+
+      private void PhosphenesToPicture()
+      {
+        Debug.Log($"Avg Phosphene Size: {phosphenes.Select(p => p.size).Average():E}; Min: {phosphenes.Select(p => p.size).Min():E}; Max: {phosphenes.Select(p => p.size).Max():E}");
+        var tex = new Texture2D(1440, 1600, TextureFormat.RGBA32, false);
+        tex.SetPixels(0,0,tex.width,tex.height,Enumerable.Repeat(Color.black, tex.width*tex.height).ToArray());
+
+        foreach (var p in phosphenes)
+        {
+          var x = Mathf.RoundToInt(p.position.x * tex.width);
+          var y = Mathf.RoundToInt(p.position.y * tex.height);
+          var size = Mathf.RoundToInt(p.size * tex.width);
+          
+          var sigma = size * 2;
+          Func<float, float> Gaussian = d => 1.0f / (sigma * 2.50662f) * Mathf.Exp(-(d * d) / (2 * sigma * sigma));
+          var scale = Gaussian(0f);
+          
+          for (int rx = 0; rx < sigma*3; rx += 1)
+          {
+            for (int ry = 0; ry < sigma*3; ry += 1)
+            {
+              if (rx * rx + ry * ry > sigma*3 * sigma*3) break;
+
+              var d = Mathf.Sqrt(rx * rx + ry * ry);
+              var spread = Gaussian(d) / scale;
+              var col = new Color(spread, spread, spread, 1);
+              
+              tex.SetPixel(x+rx, y+ry, tex.GetPixel(x+rx, y+ry)+col);
+              tex.SetPixel(x+rx, y-ry, tex.GetPixel(x+rx, y-ry)+col);
+              tex.SetPixel(x-rx, y+ry, tex.GetPixel(x-rx, y+ry)+col);
+              tex.SetPixel(x-rx, y-ry, tex.GetPixel(x-rx, y-ry)+col);
+            }
+          }
+        }
+        tex.Apply();
+        var dirPath = Path.Join(Directory.GetParent(Application.dataPath)!.FullName,"SaveImages");
+        if(!Directory.Exists(dirPath)) {
+          Directory.CreateDirectory(dirPath);
+        }
+        Debug.Log($"Saving image in: {dirPath}" );
+        File.WriteAllBytes(Path.Join(dirPath, DateTime.Now.Ticks.ToString())+".png", tex.EncodeToPNG());
       }
   }
 }

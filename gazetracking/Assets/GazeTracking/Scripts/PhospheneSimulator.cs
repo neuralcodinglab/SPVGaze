@@ -1,6 +1,8 @@
 using System;
 using System.IO;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.XR;
 using Xarphos.Scripts;
 
@@ -25,7 +27,7 @@ public class PhospheneSimulator : MonoBehaviour
     public Material edgeDetectionMaterial;
     public ComputeShader simulationCS;
     // compute shader properties 
-    private int kernelActivations, kernelSpread, kernelClean;
+    private int kernelActivations, kernelSpread;
     private int threadX, threadY, nThreadPhospheneSim;
     [SerializeField] private SurfaceReplacement.ReplacementModes currentSurfaceReplacement;
 
@@ -41,7 +43,7 @@ public class PhospheneSimulator : MonoBehaviour
     private bool runEdgeDetection, runSimulation;
     private enum GazeTrackingCondition { GazeIgnored, GazeLocked, GazeAssisted }
     [SerializeField] private GazeTrackingCondition currentCondition = GazeTrackingCondition.GazeIgnored;
-    private RenderTexture activationTex, simulationRenderTex;
+    private RenderTextureDescriptor activationTexDescriptor, renderTexDescriptor;
     
     // necessary references
     internal Camera targetCamera;
@@ -49,20 +51,22 @@ public class PhospheneSimulator : MonoBehaviour
     private bool headsetInitialised = false;
     
     // Shader Property Mapping
-    private static readonly int ShPrScreenResolution = Shader.PropertyToID("resolution");
-    private static readonly int ShPrInputTex = Shader.PropertyToID("InputTex");
     private static readonly int ShPrActivationTex = Shader.PropertyToID("ActivationTex");
-    private static readonly int ShPrSimulationRenderTex = Shader.PropertyToID("SimulationTex");
+    private static readonly int ShPrDoRenderDot = Shader.PropertyToID("do_render_dot");
     private static readonly int ShPropEyePosLeft = Shader.PropertyToID("_EyePositionLeft");
     private static readonly int ShPropEyePosRight = Shader.PropertyToID("_EyePositionRight");
+    private static readonly int ShPropEyeCenterLeft = Shader.PropertyToID("_LeftEyeCenter");
+    private static readonly int ShPropEyeCenterRight = Shader.PropertyToID("_RightEyeCenter");
+    private static readonly int ShPrGazeAssisted = Shader.PropertyToID("gazeAssisted");
+    private static readonly int ShPrGazeLocked = Shader.PropertyToID("gazeLocked");
     private static readonly int ShPrInputEffect = Shader.PropertyToID("input_effect");
+    private static readonly int ShPrInputTex = Shader.PropertyToID("InputTex");
     private static readonly int ShPrIntensityDecay = Shader.PropertyToID("intensity_decay");
+    private static readonly int ShPrPhospheneBuffer = Shader.PropertyToID("phosphenes");
+    private static readonly int ShPrSimulationRenderTex = Shader.PropertyToID("RenderTex");
+    private static readonly int ShPrScreenResolution = Shader.PropertyToID("screenResolution");
     private static readonly int ShPrTraceIncrease = Shader.PropertyToID("trace_increase");
     private static readonly int ShPrTraceDecay = Shader.PropertyToID("trace_decay");
-    private static readonly int ShPrPhospheneBuffer = Shader.PropertyToID("phosphenes");
-    private static readonly int ShPrGazeLocked = Shader.PropertyToID("phosphenes");
-    private static readonly int ShPrGazeAssisted = Shader.PropertyToID("phosphenes");
-    private static readonly int ShPrDoRenderDot = Shader.PropertyToID("do_render_dot");
 
 
     private void Awake()
@@ -72,7 +76,6 @@ public class PhospheneSimulator : MonoBehaviour
         // Extract kernel IDs from compute shader
         kernelActivations = simulationCS.FindKernel("CalculateActivations");
         kernelSpread = simulationCS.FindKernel("SpreadActivations");
-        kernelClean = simulationCS.FindKernel("CleanActivations");
         
         // Initialize the array of phosphenes
         if (initialiseFromFile && phospheneConfigFile != null)
@@ -84,6 +87,7 @@ public class PhospheneSimulator : MonoBehaviour
         }
         // if boolean is false, the file path is not given or the initialising from file failed, initialise probabilistic
         phospheneCfg ??= PhospheneConfig.InitPhosphenesProbabilistically(1000, .3f, PhospheneConfig.Monopole);
+        
         nPhosphenes = phospheneCfg.phosphenes.Length;
         phospheneBuffer = new ComputeBuffer(nPhosphenes, sizeof(float)*7);
         phospheneBuffer.SetData(phospheneCfg.phosphenes);
@@ -99,6 +103,9 @@ public class PhospheneSimulator : MonoBehaviour
         simulationCS.SetInt(ShPrGazeAssisted, 0);
         
         focusDotMaterial.SetInt(ShPrDoRenderDot, 1);
+
+        currentSurfaceReplacement = SurfaceReplacement.ReplacementModes.Normals;
+        SurfaceReplacement.ActivateReplacementShader(targetCamera, currentSurfaceReplacement);
     }
 
     private void Update()
@@ -164,24 +171,13 @@ public class PhospheneSimulator : MonoBehaviour
         
       // Initialize the render textures & Set the shaders with the shared render textures
       simulationCS.SetInts(ShPrScreenResolution, w, h);
-      activationTex = new RenderTexture(src.descriptor)
-      {
-          depth = 0,
-          enableRandomWrite = true
-      };
-      activationTex.Create();
-      simulationCS.SetTexture(kernelActivations, ShPrActivationTex, activationTex);
-      simulationCS.SetTexture(kernelSpread, ShPrActivationTex, activationTex);
-      simulationCS.SetTexture(kernelClean, ShPrActivationTex, activationTex);
       
-      simulationRenderTex = new RenderTexture(src.descriptor)
-      {
-          enableRandomWrite = true
-      };
-      activationTex.Create();
-      simulationCS.SetTexture(kernelActivations, ShPrSimulationRenderTex, simulationRenderTex);
-      simulationCS.SetTexture(kernelSpread, ShPrSimulationRenderTex, simulationRenderTex);
-      simulationCS.SetTexture(kernelClean, ShPrSimulationRenderTex, simulationRenderTex);
+      activationTexDescriptor = src.descriptor;
+      activationTexDescriptor.depthBufferBits = 0;
+      activationTexDescriptor.enableRandomWrite = true;
+      
+      renderTexDescriptor = src.descriptor;
+      renderTexDescriptor.enableRandomWrite = true;
       
       simulationCS.GetKernelThreadGroupSizes(kernelActivations, out var xGroup, out _, out _);
       nThreadPhospheneSim = Mathf.CeilToInt(nPhosphenes / xGroup);
@@ -191,8 +187,8 @@ public class PhospheneSimulator : MonoBehaviour
 
       var (lViewSpace, rViewSpace, cViewSpace) = EyePosFromScreenPoint(0.5f, 0.5f);
       SetEyePosition(lViewSpace, rViewSpace, cViewSpace);
-      simulationCS.SetVector("_LeftEyeCenter", lViewSpace);
-      simulationCS.SetVector("_RightEyeCenter", rViewSpace);
+      simulationCS.SetVector(ShPropEyeCenterLeft, lViewSpace);
+      simulationCS.SetVector(ShPropEyeCenterRight, rViewSpace);
     }
     
     private (Vector2, Vector2, Vector2) EyePosFromScreenPoint(float x, float y)
@@ -231,7 +227,9 @@ public class PhospheneSimulator : MonoBehaviour
         // if phosphene simulator is off, only need to run image through image processing for edge detection
 
         if (runEdgeDetection)
+        {
             Graphics.Blit(src, preTargetPing, edgeDetectionMaterial);
+        }
         // if edge detection is off, just blit without any processing
         else
             Graphics.Blit(src, preTargetPing);
@@ -240,16 +238,13 @@ public class PhospheneSimulator : MonoBehaviour
         {
             simulationCS.SetTexture(kernelActivations,ShPrInputTex, preTargetPing);
 
-            // var activationTex = RenderTexture.GetTemporary(dst.descriptor);
-            // activationTex.depth = 0;
-            // activationTex.enableRandomWrite = true;
-            // simulationCS.SetTexture(kernelActivations, ShPrActivationTex, activationTex);
-            // simulationCS.SetTexture(kernelSpread, ShPrActivationTex, activationTex);
+            var activationTex = RenderTexture.GetTemporary(activationTexDescriptor);
+            simulationCS.SetTexture(kernelActivations, ShPrActivationTex, activationTex);
+            simulationCS.SetTexture(kernelSpread, ShPrActivationTex, activationTex);
             
-            // var phospheneRenderTexture = RenderTexture.GetTemporary(dst.descriptor);
-            // phospheneRenderTexture.enableRandomWrite = true;
-            // simulationCS.SetTexture(kernelActivations, ShPrSimulationRenderTex, phospheneRenderTexture);
-            // simulationCS.SetTexture(kernelSpread, ShPrSimulationRenderTex, phospheneRenderTexture);
+            var simulationRenderTex = RenderTexture.GetTemporary(renderTexDescriptor);
+            simulationCS.SetTexture(kernelActivations, ShPrSimulationRenderTex, simulationRenderTex);
+            simulationCS.SetTexture(kernelSpread, ShPrSimulationRenderTex, simulationRenderTex);
 
             // calculate activations
             simulationCS.Dispatch(kernelActivations, nThreadPhospheneSim, 1, 1);
@@ -257,8 +252,8 @@ public class PhospheneSimulator : MonoBehaviour
             simulationCS.Dispatch(kernelSpread, threadX, threadY, 1);
 
             Graphics.Blit(simulationRenderTex, preTargetPing, new Vector2(1, -1), Vector2.zero);
-            // RenderTexture.ReleaseTemporary(phospheneRenderTexture);
-            simulationCS.Dispatch(kernelClean, threadX, threadY, 1);
+            RenderTexture.ReleaseTemporary(activationTex);
+            RenderTexture.ReleaseTemporary(simulationRenderTex);
         }
 
         // lastly render the focus dot on top
@@ -270,4 +265,37 @@ public class PhospheneSimulator : MonoBehaviour
     private void OnDestroy(){
         phospheneBuffer.Release();
     }
+
+    // private void DumpRenderTextureToPng(RenderTexture actv, RenderTexture sim)
+    // {
+    //     var dirPath = Path.Join(
+    //         Directory.GetParent(Application.dataPath)!.FullName,
+    //         "SaveImages",
+    //         $"RenderDump-{DateTime.Now.Minute.ToString()}");
+    //     if(!Directory.Exists(dirPath)) {
+    //         Directory.CreateDirectory(dirPath);
+    //     }
+    //
+    //     Texture2DArray texarr = new Texture2DArray(actv.width, actv.height, actv.volumeDepth, actv.graphicsFormat,
+    //         TextureCreationFlags.None);
+    //     Graphics.CopyTexture(actv, texarr);
+    //     Texture2D tex = new Texture2D(actv.width * 2 + 1, actv.height);
+    //     tex.SetPixels(actv.width, 0, 1, actv.height, Enumerable.Repeat(Color.gray, actv.height).ToArray());
+    //     tex.SetPixels(0,0,actv.width,actv.height,texarr.GetPixels(0,0));
+    //     tex.SetPixels(actv.width+1, 0, actv.width, actv.height, texarr.GetPixels(1,0));
+    //     tex.Apply();
+    //     var path = Path.Join(dirPath, $"{Time.frameCount}_activations.png");
+    //     File.WriteAllBytes(path, tex.EncodeToPNG());
+    //
+    //     texarr = new Texture2DArray(sim.width, sim.height, sim.volumeDepth, sim.graphicsFormat,
+    //         TextureCreationFlags.None);
+    //     Graphics.CopyTexture(sim, texarr);
+    //     tex = new Texture2D(sim.width * 2 + 1, sim.height);
+    //     tex.SetPixels(actv.width, 0, 1, sim.height, Enumerable.Repeat(Color.gray, sim.height).ToArray());
+    //     tex.SetPixels(0,0,sim.width,sim.height,texarr.GetPixels(0,0));
+    //     tex.SetPixels(sim.width+1, 0, sim.width, sim.height, texarr.GetPixels(1,0));
+    //     tex.Apply();
+    //     path = Path.Join(dirPath, $"{Time.frameCount}_simulation.png");
+    //     File.WriteAllBytes(path, tex.EncodeToPNG());
+    // }
 }
