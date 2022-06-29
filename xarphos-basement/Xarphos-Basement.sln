@@ -1,15 +1,39 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnoxSoftware.OpenCVForUnity", "EnoxSoftware.OpenCVForUnity.csproj", "{3bac0bc7-0482-18f5-fa75-573eaaae2b0b}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{8d2ba348-87cb-3b06-3712-150ea5381435}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sirenix.OdinInspector.CompatibilityLayer", "Sirenix.OdinInspector.CompatibilityLayer.csproj", "{53324745-a1f4-fe1d-f789-1d471030c006}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Sirenix.OdinInspector.CompatibilityLayer.Editor", "Sirenix.OdinInspector.CompatibilityLayer.Editor.csproj", "{ed3ae45b-f6b2-840c-4706-e2b388fcf590}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EnoxSoftware.OpenCVForUnity.Editor", "EnoxSoftware.OpenCVForUnity.Editor.csproj", "{5d2bbe82-9805-39ce-6c23-c5234dd478a3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{93432b0e-6233-a1ea-ac02-9045364972fb}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-firstpass", "Assembly-CSharp-firstpass.csproj", "{9b24b874-1d16-4193-4e77-539a2049d431}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3bac0bc7-0482-18f5-fa75-573eaaae2b0b}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3bac0bc7-0482-18f5-fa75-573eaaae2b0b}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8d2ba348-87cb-3b06-3712-150ea5381435}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8d2ba348-87cb-3b06-3712-150ea5381435}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53324745-a1f4-fe1d-f789-1d471030c006}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53324745-a1f4-fe1d-f789-1d471030c006}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ed3ae45b-f6b2-840c-4706-e2b388fcf590}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ed3ae45b-f6b2-840c-4706-e2b388fcf590}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5d2bbe82-9805-39ce-6c23-c5234dd478a3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5d2bbe82-9805-39ce-6c23-c5234dd478a3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93432b0e-6233-a1ea-ac02-9045364972fb}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93432b0e-6233-a1ea-ac02-9045364972fb}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9b24b874-1d16-4193-4e77-539a2049d431}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9b24b874-1d16-4193-4e77-539a2049d431}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
