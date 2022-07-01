@@ -59,8 +59,6 @@ namespace Simulation
         private int kernelActivations, kernelSpread, kernelClean;
         private int threadX, threadY, threadPhosphenes;
         private bool headsetInitialised = false;
-
-        private ComputeBuffer debugBuffer;
         
         #region Shader Properties Name-To-Int
         // Rendering related
@@ -86,8 +84,6 @@ namespace Simulation
         private static readonly int ShPrTraceIncrease = Shader.PropertyToID("trace_increase");
         private static readonly int ShPrTraceDecay = Shader.PropertyToID("trace_decay");
       
-        // Debug Things
-        private static readonly int ShPrDebugBuffer = Shader.PropertyToID("debugBuffer");
         #endregion
 
         protected void Awake()
@@ -228,14 +224,9 @@ namespace Simulation
           // calculate the center position for each eye corrected for visual transform
           var (lViewSpace, rViewSpace, cViewSpace) = EyePosFromScreenPoint(0.5f, 0.5f);
           SetEyePosition(lViewSpace, rViewSpace, cViewSpace);
-          simulationComputeShader.SetVector("_LeftEyeCenter", lViewSpace);
-          simulationComputeShader.SetVector("_RightEyeCenter", rViewSpace);
+          simulationComputeShader.SetVector(ShPrLeftEyeCenter, lViewSpace);
+          simulationComputeShader.SetVector(ShPrRightEyeCenter, rViewSpace);
 
-          debugBuffer = new ComputeBuffer(w * h, sizeof(float) * 4);
-          simulationComputeShader.SetBuffer(simulationComputeShader.FindKernel("DebugBuffer"), "debugBuffer", debugBuffer);
-          simulationComputeShader.SetTexture(simulationComputeShader.FindKernel("DebugBuffer"), ShPrActivationTex, actvTex);
-          simulationComputeShader.SetTexture(simulationComputeShader.FindKernel("DebugBuffer"), ShPrSimRenderTex, simRenderTex);
-          
           // Replace surfaces with the surface replacement shader
           SurfaceReplacement.ActivateReplacementShader(targetCamera, surfaceReplacementMode);
         }
@@ -274,7 +265,8 @@ namespace Simulation
 
         private void OnDestroy(){
           phospheneBuffer.Release();
-          debugBuffer.Release();
+          actvTex.Release();
+          simRenderTex.Release();
         }
 
         #region Input Handling

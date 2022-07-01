@@ -1629,6 +1629,58 @@ MonoBehaviour:
       m_Flags: 0
     m_Reference: {fileID: 7305902790782627833, guid: 8b45fc63386b49847b078b7ae020b9ed,
       type: 3}
+  moveToHallway1:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Move To Hallway 1
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 1dddff87-6ac7-4e29-a54b-75ed84ea0702
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: -1023985609051973890, guid: 8b45fc63386b49847b078b7ae020b9ed,
+      type: 3}
+  moveToHallway2:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Move To Hallway 2
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 880f6a31-1c6d-4ddf-9e51-5b5a0f4d9262
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 1887307406599226952, guid: 8b45fc63386b49847b078b7ae020b9ed,
+      type: 3}
+  moveToHallway3:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Move To Hallway 3
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: f381a89e-2de9-4010-a388-7035345e09b8
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: -568896765783893379, guid: 8b45fc63386b49847b078b7ae020b9ed,
+      type: 3}
+  moveToPlayground:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Move To Playground
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 5e162550-0cf0-4da9-b0b8-80f6166ebaa5
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 5957202606726662873, guid: 8b45fc63386b49847b078b7ae020b9ed,
+      type: 3}
 --- !u!54 &1046160062
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -58,6 +58,42 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "MoveToHallway1",
+                    "type": "Button",
+                    "id": "64efef68-b16f-4185-9c6f-f2f47a12a103",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "MoveToHallway2",
+                    "type": "Button",
+                    "id": "ac2d3fad-ce9a-4425-8145-9639939eb439",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "MoveToHallway3",
+                    "type": "Button",
+                    "id": "c791f698-8240-4fc9-ab34-277809995be6",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "MoveToPlayground",
+                    "type": "Button",
+                    "id": "d38d0505-4bf0-406f-82ac-ba1901b630eb",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -278,6 +314,50 @@
                     "processors": "",
                     "groups": "",
                     "action": "ToggleEyeTrackingMode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5a2de9e6-b155-4b5f-bb09-55bfceaeb666",
+                    "path": "<Keyboard>/numpad1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MoveToHallway1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "277e609f-b030-4f77-b9d1-f8915a5bbcf3",
+                    "path": "<Keyboard>/numpad2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MoveToHallway2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e67a4724-e012-4cd4-8193-f68196df846d",
+                    "path": "<Keyboard>/numpad3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MoveToHallway3",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "31e81e53-d9c1-488d-96db-3df2a3efdba7",
+                    "path": "<Keyboard>/numpad0",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MoveToPlayground",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

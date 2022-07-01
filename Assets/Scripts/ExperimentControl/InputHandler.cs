@@ -88,6 +88,46 @@ namespace ExperimentControl
             get => iterateEyeTrackingState;
             set => SetInputActionProperty(ref iterateEyeTrackingState, value);
         }
+        [SerializeField]
+        private InputActionProperty moveToHallway1;
+        /// <summary>
+        /// The Input System action to use for iterating the different surface replacement shaders. Must be a <see cref="ButtonControl"/> Control.
+        /// </summary>
+        public InputActionProperty MoveToHallway1Action
+        {
+            get => moveToHallway1;
+            set => SetInputActionProperty(ref moveToHallway1, value);
+        }
+        [SerializeField]
+        private InputActionProperty moveToHallway2;
+        /// <summary>
+        /// The Input System action to use for iterating the different surface replacement shaders. Must be a <see cref="ButtonControl"/> Control.
+        /// </summary>
+        public InputActionProperty MoveToHallway2Action
+        {
+            get => moveToHallway2;
+            set => SetInputActionProperty(ref moveToHallway2, value);
+        }
+        [SerializeField]
+        private InputActionProperty moveToHallway3;
+        /// <summary>
+        /// The Input System action to use for iterating the different surface replacement shaders. Must be a <see cref="ButtonControl"/> Control.
+        /// </summary>
+        public InputActionProperty MoveToHallway3Action
+        {
+            get => moveToHallway3;
+            set => SetInputActionProperty(ref moveToHallway3, value);
+        }
+        [SerializeField]
+        private InputActionProperty moveToPlayground;
+        /// <summary>
+        /// The Input System action to use for iterating the different surface replacement shaders. Must be a <see cref="ButtonControl"/> Control.
+        /// </summary>
+        public InputActionProperty MoveToPlaygroundAction
+        {
+            get => moveToPlayground;
+            set => SetInputActionProperty(ref moveToPlayground, value);
+        }
 
         /// <summary>
         /// Taken from <see cref="ActionBasedController"/> to handle the input actions
@@ -117,22 +157,24 @@ private void Start()
             MoveAction.action.performed += Move;
             MoveAction.action.canceled += Move;
             ToggleEdgeDetectionAction.action.performed += simulator.ToggleEdgeDetection;
-                TogglePhospheneSimulationAction.action.performed += simulator.TogglePhospheneSim;
+            TogglePhospheneSimulationAction.action.performed += simulator.TogglePhospheneSim;
             IterateSurfaceReplacementsAction.action.performed += simulator.NextSurfaceReplacementMode;
             IterateEyeTrackingStateAction.action.performed += simulator.NextEyeTrackingCondition;
+            MoveToHallway1Action.action.performed += ctx =>
+                MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Hallway1]);
+            MoveToHallway2Action.action.performed += ctx =>
+                MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Hallway2]);
+            MoveToHallway3Action.action.performed += ctx =>
+                MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Hallway3]);
+            MoveToPlaygroundAction.action.performed += ctx =>
+                MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Playground]);
         }
 
-        public void MoveToNewHallway(
-            Vector3 startPos,
-            GameObject wallLeft,
-            GameObject wallRight,
-            GameObject wallStart,
-            GameObject wallEnd
-        )
+        public void MoveToNewHallway(HallwayCreator.Hallway config)
         {
-            transform.position = startPos;
+            transform.position = new Vector3(config.StartX, 0, 0);
             transform.rotation = Quaternion.Euler(Vector3.zero);
-            SetBoundaries(wallLeft, wallRight, wallStart, wallEnd);
+            SetBoundaries(config.WallLeft, config.WallRight, config.WallStart, config.WallEnd);
         }
 
         public void SetBoundaries(GameObject wallLeft, GameObject wallRight, GameObject wallStart, GameObject wallEnd)
