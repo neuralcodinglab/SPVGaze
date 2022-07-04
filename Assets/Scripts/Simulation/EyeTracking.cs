@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using ViveSR;
 using ViveSR.anipal;
 using ViveSR.anipal.Eye;
@@ -60,6 +59,8 @@ namespace Simulation
 
             // find reference to simulator
             sim = GetComponent<PhospheneSimulator>();
+
+            SenorSummarySingletons.RegisterType(this);
         }
         
         private void FixedUpdate()
@@ -216,9 +217,6 @@ namespace Simulation
 
         private void RegisterCallback()
         {
-            var eyeParameter = new EyeParameter();
-            SRanipal_Eye_API.GetEyeParameter(ref eyeParameter);
-
             if (SRanipal_Eye_Framework.Instance.EnableEyeDataCallback && !eyeCallbackRegistered)
             {
                 SRanipal_Eye_v2.WrapperRegisterEyeDataCallback(
@@ -257,7 +255,7 @@ internal static int TimingIdx = 0;
             var fetchResult = SRanipal_Eye_API.GetEyeData_v2(ref _eyeData);
             if (fetchResult != ViveSR.Error.WORK) return;
             
-            MeasureTime = DateTime.Now.Ticks;
+            MeasureTime = now.Ticks;
             time_stamp = _eyeData.timestamp;
             frame = _eyeData.frame_sequence;
             eye_valid_L = _eyeData.verbose_data.left.eye_data_validata_bit_mask;

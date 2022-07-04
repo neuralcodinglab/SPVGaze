@@ -5,9 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+
 // using Sirenix.Utilities;
 
-namespace Xarphos.Scripts.DataCollection
+namespace DataHandling
 {
     public class DataCollector
     {
@@ -83,8 +84,8 @@ namespace Xarphos.Scripts.DataCollection
                 subjID,
                 (trialID + ".csv")
             );
-            
-            
+
+            SenorSummarySingletons.RegisterType(this);
         }
 
         public void Initialise(Dictionary<string, DataDescription> schema = null)

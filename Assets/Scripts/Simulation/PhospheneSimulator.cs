@@ -133,6 +133,8 @@ namespace Simulation
         {
           // replace surfaces with in editor selected variant
           SurfaceReplacement.ActivateReplacementShader(targetCamera, surfaceReplacementMode);
+
+          SenorSummarySingletons.RegisterType(this);
         }
 
         private void OnRenderImage(RenderTexture src, RenderTexture target)
@@ -280,8 +282,12 @@ namespace Simulation
         public void NextEyeTrackingCondition(InputAction.CallbackContext ctx) => NextEyeTrackingCondition();
         private void NextEyeTrackingCondition()
         {
-          eyeTrackingCondition = (EyeTracking.EyeTrackingConditions)((int)(eyeTrackingCondition + 1) % nEyeTrackingModes);
-
+          SetGazeTrackingCondition((EyeTracking.EyeTrackingConditions)((int)(eyeTrackingCondition + 1) % nEyeTrackingModes));
+        }
+        
+        public void SetGazeTrackingCondition(EyeTracking.EyeTrackingConditions condition)
+        {
+          eyeTrackingCondition = condition;
           switch (eyeTrackingCondition)
           {
             // reset and don't use gaze info

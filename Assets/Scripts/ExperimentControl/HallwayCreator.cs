@@ -135,6 +135,8 @@ namespace ExperimentControl
             CreateHallway(hallway1, 0, Hallways.Hallway1);
             CreateHallway(hallway2, sectionSize*2, Hallways.Hallway2);
             CreateHallway(hallway3, sectionSize*4, Hallways.Hallway3);
+
+            SenorSummarySingletons.RegisterType(this);
         }
 
         private void CreateHallway(IEnumerable<HallwaySections> layout, float startX, Hallways which)

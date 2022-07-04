@@ -168,6 +168,8 @@ private void Start()
                 MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Hallway3]);
             MoveToPlaygroundAction.action.performed += ctx =>
                 MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Playground]);
+
+            SenorSummarySingletons.RegisterType(this);
         }
 
         public void MoveToNewHallway(HallwayCreator.Hallway config)
