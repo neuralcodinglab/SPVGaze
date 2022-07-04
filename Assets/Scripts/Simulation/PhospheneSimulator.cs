@@ -27,8 +27,8 @@ namespace Simulation
         private float traceDecay = 0.9f; // The factor by which the stimulation memory trace decreases
 
         // Image processing settings
-        private float runSimulation;
-        private bool runEdgeDetection;
+        private float runSimulation = 0;
+        private bool runEdgeDetection = false;
         
         // protected RenderTextureDescriptor ActvTexDesc;
         private RenderTexture actvTex, simRenderTex;

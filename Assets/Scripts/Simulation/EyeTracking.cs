@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using ViveSR;
 using ViveSR.anipal;
 using ViveSR.anipal.Eye;
 using EyeFramework = ViveSR.anipal.Eye.SRanipal_Eye_Framework;
@@ -54,7 +57,6 @@ namespace Simulation
             // start register and check functions with a delay
             // ToDo: Is there a "VR-Ready" Event to subscribe to?
             Invoke(nameof(SystemCheck), .5f);
-            Invoke(nameof(RegisterCallback), .5f);
 
             // find reference to simulator
             sim = GetComponent<PhospheneSimulator>();
@@ -76,7 +78,7 @@ namespace Simulation
                 SetEyePositionToCenter();
                 return;
             }
-            
+
             FocusInfo focusInfo;
             // try to get focus point from combined gaze origin
             if (GetFocusPoint(GazeIndex.COMBINE, out focusInfo)) {}
@@ -115,9 +117,9 @@ namespace Simulation
             var rProjection = rMat * world2cam * P4d;
             var cProjection = cMat * world2cam * P4d;
             // scale and shift from clip space [-1,1] into view space [0,1]
-            var lViewSpace = (new Vector2(lProjection.x, lProjection.y) / lProjection.w) * .5f + .5f * Vector2.one;
-            var rViewSpace = (new Vector2(rProjection.x, rProjection.y) / rProjection.w) * .5f + .5f * Vector2.one;
-            var cViewSpace = (new Vector2(cProjection.x, cProjection.y) / cProjection.w) * .5f + .5f * Vector2.one;
+            var lViewSpace = (new Vector2(lProjection.x, -lProjection.y) / lProjection.w) * .5f + .5f * Vector2.one;
+            var rViewSpace = (new Vector2(rProjection.x, -rProjection.y) / rProjection.w) * .5f + .5f * Vector2.one;
+            var cViewSpace = (new Vector2(cProjection.x, -cProjection.y) / cProjection.w) * .5f + .5f * Vector2.one;
 
             // ToDo: Update only when valid; Consider gaze smoothing; Play with SrAnipal GazeParameter
             sim.SetEyePosition(lViewSpace, rViewSpace, cViewSpace);
@@ -184,16 +186,19 @@ namespace Simulation
                 Debug.LogWarning("Eye Tracking Not Supported");
                 return;
             }
-            
+            // unfiltered data please
+            var param = new EyeParameter();
+            param.gaze_ray_parameter.sensitive_factor = 1f;
+            SRanipal_Eye_API.SetEyeParameter(param);
 
             var eyeDataResult = SRanipal_Eye_API.GetEyeData_v2(ref _eyeData);
             var eyeParamResult = SRanipal_Eye_API.GetEyeParameter(ref eyeParameter);
             var resultEyeInit = SRanipal_API.Initial(SRanipal_Eye_v2.ANIPAL_TYPE_EYE_V2, IntPtr.Zero);
             
             if (
-                eyeDataResult != ViveSR.Error.WORK ||
-                eyeParamResult != ViveSR.Error.WORK ||
-                resultEyeInit != ViveSR.Error.WORK
+                eyeDataResult != Error.WORK ||
+                eyeParamResult != Error.WORK ||
+                resultEyeInit != Error.WORK
             )
             {
                 Debug.LogError("Inital Check failed.\n" +
@@ -206,6 +211,7 @@ namespace Simulation
             }
 
             eyeTrackingAvailable = true;
+            RegisterCallback();
         }
 
         private void RegisterCallback()
@@ -232,11 +238,20 @@ namespace Simulation
 #endregion
 
 #region EyeTracking Data Collection
+
+internal static readonly float[] Timings = Enumerable.Repeat(float.MinValue, 500).ToArray();
+internal static int TimingIdx = 0;
         [MonoPInvokeCallback]
         private static void EyeCallback(ref EyeData_v2 eyeDataRef)
         {
+            TimingIdx = (TimingIdx + 1) % Timings.Length;
+            var now = DateTime.Now;
+            var tick = now.Hour * 3600f + now.Minute * 60f + now.Second + now.Millisecond / 1000f;
+            Timings[TimingIdx] = tick;
+            
             var eyeParameter = new EyeParameter();
-            SRanipal_Eye_API.GetEyeParameter(ref eyeParameter);
+            var retrievalOutcome = SRanipal_Eye_API.GetEyeParameter(ref eyeParameter);
+            var outcome = Enum.GetName(typeof(Error), retrievalOutcome);
             _eyeData = eyeDataRef;
             
             var fetchResult = SRanipal_Eye_API.GetEyeData_v2(ref _eyeData);
@@ -301,6 +316,18 @@ namespace Simulation
         /// </summary>
         internal class MonoPInvokeCallbackAttribute : Attribute { }
 #endregion
+
+        private void CalibrateTracking()
+        {
+            var t = gameObject.transform;
+            var tl = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            tl.transform.SetParent(t);
+            tl.transform.localScale = .01f * Vector3.one;
+            tl.transform.position = t.position + t.forward * 5f;
+            var tr = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            var bl = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            var br = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        }
 
     }
 }
