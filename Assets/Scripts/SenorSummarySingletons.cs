@@ -8,16 +8,6 @@ using UnityEngine;
 
 public static class SenorSummarySingletons
 {
-    public enum ClassReferences
-    {
-        EyeTracking,
-        PhospheneSimulator,
-        HallwayCreator,
-        InputHandler,
-        UICallbacks,
-        DataCollector
-    }
-
     private static Dictionary<Type, object> _senorsSingletons;
 
     public static bool RegisterType(object instance)
@@ -27,7 +17,7 @@ public static class SenorSummarySingletons
         var type = instance.GetType();
         if (_senorsSingletons.ContainsKey(type))
         {
-            Debug.Log($"Tried to register {Enum.GetName(typeof(ClassReferences), type)}, but is already registered");
+            Debug.Log($"Tried to register {type}, but is already registered");
             return false;
         }
         _senorsSingletons[type] = instance;

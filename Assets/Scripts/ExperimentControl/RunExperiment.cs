@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using ExperimentControl;
 using Simulation;
-using Sirenix.Utilities;
 using UnityEngine;
 using Random = UnityEngine.Random;
 

@@ -239,6 +239,7 @@ namespace Simulation
 
 internal static readonly float[] Timings = Enumerable.Repeat(float.MinValue, 500).ToArray();
 internal static int TimingIdx = 0;
+
         [MonoPInvokeCallback]
         private static void EyeCallback(ref EyeData_v2 eyeDataRef)
         {
@@ -314,18 +315,5 @@ internal static int TimingIdx = 0;
         /// </summary>
         internal class MonoPInvokeCallbackAttribute : Attribute { }
 #endregion
-
-        private void CalibrateTracking()
-        {
-            var t = gameObject.transform;
-            var tl = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            tl.transform.SetParent(t);
-            tl.transform.localScale = .01f * Vector3.one;
-            tl.transform.position = t.position + t.forward * 5f;
-            var tr = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            var bl = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            var br = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        }
-
     }
 }

@@ -28,7 +28,7 @@ namespace ExperimentControl
             LargeLeftCenter, LargeCenterRight, LargeLeftRight
         }
 
-        internal enum Hallways
+        public enum Hallways
         {
             Playground, Hallway1, Hallway2, Hallway3
         }
