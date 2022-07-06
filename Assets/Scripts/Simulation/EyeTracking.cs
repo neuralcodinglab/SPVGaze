@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Unity.XR.CoreUtils;
 using UnityEngine;
 using ViveSR;
 using ViveSR.anipal;
@@ -315,5 +317,150 @@ internal static int TimingIdx = 0;
         /// </summary>
         internal class MonoPInvokeCallbackAttribute : Attribute { }
 #endregion
+
+        #region Smoothing
+        // Following Olsson, Pontus. "Real-time and offline filters for eye tracking." (2007).
+        // on mouse pointer filtered position with fast attenuation on saccades
+
+        // ToDo: Smooth eyePos in sensor or smooth screen pos from worldspace raycast
+        [Header("Smooting Parameters")]
+        public const float SmoothingT = 1.5f;
+        public const float SmoothingThreshold = 0.05f; // default value ~5 degree of visual field
+        public const float SmoothingTFast = 0.05f;
+        public const float SmoothingThresholdSq = SmoothingThreshold * SmoothingThreshold;
+        private float smoothingTReturn;
+        private float smoothingTReturnSpeed = float.MinValue;
+        private FixedSizeList<SmoothData> lastMeasuredPositions;
+        private FixedSizeList<SmoothData> lastSmoothedPositions;
+        
+        private struct SmoothData
+        {
+            internal Vector2 Position { get; }
+            private readonly int time; // diff of timestamp = h in ms
+            public float Timestamp => time / 1000f; // return timestamp in seconds
+
+            public SmoothData(Vector2 measuredPos, int timestamp)
+            {
+                Position = measuredPos;
+                time = timestamp;
+            }
+        }
+
+        private Vector2 SmoothedPosition(Vector2 measuredPos, int timestamp)
+        {
+            lastMeasuredPositions ??= new FixedSizeList<SmoothData>(12);
+            lastSmoothedPositions ??= new FixedSizeList<SmoothData>(12);
+
+            // retrieve last measurement
+            if (!lastMeasuredPositions.GetLast(out var prevMeasure))
+            {
+                prevMeasure = new SmoothData(measuredPos, timestamp);
+            }
+            // add new measure to buffer
+            var newMeasure = new SmoothData(measuredPos, timestamp);
+            lastMeasuredPositions.Add(newMeasure);
+            
+            // calculate sampling interval
+            var samplingTime = newMeasure.Timestamp - prevMeasure.Timestamp;
+            
+            // if we are still attenuating after saccade calculate acceleration and update T
+            if (smoothingTReturnSpeed >= 0)
+            {
+                smoothingTReturn += smoothingTReturnSpeed;
+                smoothingTReturnSpeed += 1f / (10f * samplingTime); // accelerate T with (1/10th of sampling time) over (sampling time squared)
+                if (smoothingTReturn >= SmoothingT)
+                {
+                    smoothingTReturn = float.MinValue;
+                    smoothingTReturnSpeed = float.MinValue;
+                }
+            }
+            else // check for new jump
+            {
+                var recentHalf = lastMeasuredPositions.GetRecentHalf();
+                var recentMean = recentHalf.Aggregate(Vector2.zero, (acc, d) => acc + d.Position) / recentHalf.Count;
+                var olderHalf = lastMeasuredPositions.GetOlderHalf();
+                var olderMean = olderHalf.Aggregate(Vector2.zero, (acc, d) => acc + d.Position) / olderHalf.Count;
+                var diff = (recentMean - olderMean).Abs();
+                // check if we moved outside of threshold circle
+                if (diff.sqrMagnitude >= SmoothingThresholdSq)
+                {
+                    // reset T and start acceleration
+                    smoothingTReturn = SmoothingTFast;
+                    smoothingTReturnSpeed = 1f / (10f * samplingTime);
+                }
+            }
+            
+            // calculate filter coefficient 
+            var t = smoothingTReturn >= 0 ? smoothingTReturn : SmoothingT;
+            var alpha = t / samplingTime;
+            
+            // get last smoothed position for calculation
+            if (!lastSmoothedPositions.GetLast(out var prevSmoothed))
+            {
+                prevSmoothed = new SmoothData(measuredPos, timestamp);
+            }
+            
+            // calculate smoothed position
+            var smoothedPos = (measuredPos + alpha * prevSmoothed.Position) / (1 + alpha);
+            lastSmoothedPositions.Add(new SmoothData(smoothedPos, timestamp));
+
+            return smoothedPos;
+        }
+
+        private class FixedSizeList<T> : List<T>
+        {
+            public int Size { get; }
+            protected new readonly int Capacity;
+
+            public FixedSizeList(int size) : base(size)
+            {
+                Size = size;
+            }
+
+            public bool GetLast(out T obj)
+            {
+                obj = default;
+                if (Count == 0) return false;
+                obj = this.ElementAt(Count - 1);
+                return true;
+            }
+
+            public List<T> GetRecentHalf()
+            {
+                if (Count <= 1) return null;
+                var idx = Mathf.CeilToInt(Count / 2f);
+                return GetRange(idx, Count - idx);
+            }
+            
+            public IList<T> GetOlderHalf()
+            {
+                if (Count == 0) return null;
+                var idx = Mathf.CeilToInt(Count / 2f);
+                return GetRange(0, idx);
+            }
+
+            public bool IsFull()
+            {
+                return Count == Size;
+            }
+
+            public new void Add(T obj)
+            {
+                if (Count == Capacity)
+                {
+                    RemoveAt(0);
+                    base.Add(obj);
+                    if (Count != Capacity || Count != Size)
+                    {
+                        Debug.LogError("FixedSizeList not so fixed.");
+                    }
+                }
+                else
+                    base.Add(obj);
+            }
+        }
+
+
+        #endregion
     }
 }

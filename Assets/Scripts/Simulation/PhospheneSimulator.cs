@@ -218,10 +218,10 @@ namespace Simulation
 
           // calculate the thread count necessary to cover the entire texture
           simulationComputeShader.GetKernelThreadGroupSizes(kernelSpread, out var xGroup, out var yGroup, out _);
-          threadX = Mathf.CeilToInt(w / xGroup);
-          threadY = Mathf.CeilToInt(h / yGroup);
+          threadX = Mathf.CeilToInt(w / (float)xGroup);
+          threadY = Mathf.CeilToInt(h / (float)yGroup);
           simulationComputeShader.GetKernelThreadGroupSizes(kernelActivations, out xGroup, out _, out _);
-          threadPhosphenes = Mathf.CeilToInt(nPhosphenes / xGroup);
+          threadPhosphenes = Mathf.CeilToInt(nPhosphenes / (float)xGroup);
           
           // calculate the center position for each eye corrected for visual transform
           var (lViewSpace, rViewSpace, cViewSpace) = EyePosFromScreenPoint(0.5f, 0.5f);
