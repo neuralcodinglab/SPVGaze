@@ -9,5 +9,8 @@ namespace DataHandling
         
         public static int InZone = 0;
         public static int CollisionCount = 0;
+
+        public static string subjID;
+        public static string trialID;
     }
 }
