@@ -1,13 +1,12 @@
 using System;
-using UnityEngine;
 using System.IO;
 using System.Linq;
 using System.Text;
 using MathNet.Numerics;
 using MathNet.Numerics.Random;
+using UnityEngine;
 
-
-namespace Xarphos.Scripts
+namespace Simulation
 {
 
   public struct Phosphene

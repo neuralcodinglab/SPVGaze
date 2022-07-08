@@ -2,14 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using DataHandling;
-using DataHandling.EntityFramework;
 using Simulation;
 using TMPro;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
-using ViveSR.anipal;
 using ViveSR.anipal.Eye;
 
 namespace ExperimentControl.UI
@@ -53,10 +50,27 @@ namespace ExperimentControl.UI
 
         public  void BtnSetUpExperimentBlocks()
         {
-            var collector = new DataCollector();
-            collector.StartNewTrial(true);
-            Invoke(nameof(TestData), 1f);
-            Invoke(nameof(collector.EndBlock), 1.3f);
+            var data = SQLiteHandler.Instance;
+            data.AllowNewRecords();
+
+            EyeParameter param = default;
+            SRanipal_Eye_API.GetEyeParameter(ref param);
+            data.AddTrialConfig(
+                StaticDataReport.subjID, StaticDataReport.blockId, StaticDataReport.trialId,
+                EyeTracking.EyeTrackingConditions.GazeAssistedSampling, HallwayCreator.Hallways.Hallway2, Glasses.Glasses,
+                param.gaze_ray_parameter.sensitive_factor
+            );
+            var xrOrigin = GameObject.FindObjectOfType<XROrigin>().transform;
+            var xrH = FindObjectOfType<PhospheneSimulator>().transform;
+            var lHand = GameObject.Find("LeftHand Controller").transform;
+            var rHand = GameObject.Find("RightHand Controller").transform;
+            data.AddEngineRecord(
+                StaticDataReport.subjID, StaticDataReport.blockId, StaticDataReport.trialId, DateTime.Now.Ticks,
+                xrOrigin, false, false, xrH,
+                lHand, false, false, 
+                rHand, false, false,
+                StaticDataReport.CollisionCount, StaticDataReport.InZone, Time.frameCount
+            );
         }
 
         private void TestData()

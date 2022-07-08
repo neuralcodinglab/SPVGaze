@@ -14,6 +14,7 @@ using Unity.VisualScripting;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using ViveSR.anipal.Eye;
+using Application = UnityEngine.Device.Application;
 using Random = UnityEngine.Random;
 
 // using Sirenix.Utilities;
@@ -27,10 +28,7 @@ namespace DataHandling
         public float? Max;
     }
 
-    public struct Schema
-    {
-        public OrderedDictionary<string, DataDescription> Mapping;
-    }
+    public class Schema : OrderedDictionary<string, DataDescription> { }
     
     public class DataCollector
     {
@@ -45,12 +43,12 @@ namespace DataHandling
         private BlockingCollection<DataRecord> writeQueue;
         private CancellationTokenSource asyncCancellationTokenSource;
         private ParallelLoopResult parallelLoopResult;
-        private Dictionary<OrderedDictionary<string, DataDescription>, FileStream> schema2Stream;
+        private Dictionary<Schema, FileStream> schema2Stream;
         private Task currentWritingOp;
 
         private string fileHeader;
 
-        private static OrderedDictionary<string, DataDescription> trialConfigSchema = new OrderedDictionary<string, DataDescription>
+        private static Schema trialConfigSchema = new Schema
         {
             { "SubjectID", new DataDescription { DType = typeof(string) } },
             { "TrialID", new DataDescription { DType = typeof(string) } },
@@ -61,7 +59,7 @@ namespace DataHandling
             { "DataDelimiter", new DataDescription { DType = typeof(string) } }
         };
 
-        private static OrderedDictionary<string, DataDescription> engineDataSchema = new OrderedDictionary<string, DataDescription>
+        private static Schema engineDataSchema = new Schema
         {
                 { "SubjectID", new DataDescription{DType = typeof(string)}},
                 { "TrialID", new DataDescription{DType = typeof(string)}},
@@ -85,7 +83,7 @@ namespace DataHandling
                 { "FrameCount", new DataDescription { DType = typeof(int), Min = 0 } }
         };
 
-        private static OrderedDictionary<string, DataDescription> eyeTrackerDataSchema = new OrderedDictionary<string, DataDescription>
+        private static Schema eyeTrackerDataSchema = new Schema
         {
                 { "SubjectID", new DataDescription{DType = typeof(string)}},
                 { "TrialID", new DataDescription{DType = typeof(string)}},
@@ -97,7 +95,7 @@ namespace DataHandling
                 { "ConvergenceDistanceValidity", new DataDescription { DType = typeof(bool) } }
         };
 
-        private static OrderedDictionary<string, DataDescription> singleEyeDataSchema = new OrderedDictionary<string, DataDescription>
+        private static Schema singleEyeDataSchema = new Schema
         {
             { "SubjectID", new DataDescription{DType = typeof(string)}},
                 { "TrialID", new DataDescription{DType = typeof(string)}},
@@ -115,9 +113,9 @@ namespace DataHandling
                 { "Wide", new DataDescription { DType = typeof(float) } } // will be null(?) for combined
         };
 
-        private static OrderedDictionary<string, DataDescription> singleEyeDataSchemaC = singleEyeDataSchema.Clone(new DictionaryCloner(), true);
-        private static OrderedDictionary<string, DataDescription> singleEyeDataSchemaL = singleEyeDataSchema.Clone(new DictionaryCloner(), true);
-        private static OrderedDictionary<string, DataDescription> singleEyeDataSchemaR = singleEyeDataSchema.Clone(new DictionaryCloner(), true);
+        private static Schema singleEyeDataSchemaC = singleEyeDataSchema.Clone(new DictionaryCloner(), true);
+        private static Schema singleEyeDataSchemaL = singleEyeDataSchema.Clone(new DictionaryCloner(), true);
+        private static Schema singleEyeDataSchemaR = singleEyeDataSchema.Clone(new DictionaryCloner(), true);
 
     //     private static Schema defaultSchema = new()
     //     {
@@ -170,7 +168,7 @@ namespace DataHandling
     //         }
     // };
 
-        private Dictionary<OrderedDictionary<string, DataDescription>, string> schema2filename = new()
+        private Dictionary<Schema, string> schema2filename = new()
         {
             { trialConfigSchema, "trial_config.csv" },
             { engineDataSchema, "engine_data.csv" },
@@ -188,11 +186,11 @@ namespace DataHandling
 
             currBlock = 0;
 
-            subjDir = Path.Join(StaticDataReport.DataDir, SubjID);
+            subjDir = Path.Join("C:", "Data", SubjID);
             if (Directory.Exists(subjDir))
             {
                 Debug.LogWarning($"Subject DIrectory {subjDir} exists. Appending number.");
-                subjDir = Path.Join(subjDir, (Random.value*Random.value).ToString(CultureInfo.InvariantCulture));
+                subjDir = Path.Join(subjDir,Path.GetFileNameWithoutExtension(Path.GetRandomFileName()));
             }
             Directory.CreateDirectory(subjDir);
 
@@ -214,13 +212,15 @@ namespace DataHandling
             }
             currTrial += 1;
 
-            StaticDataReport.trialID = $"{currBlock:D2}_{currTrial:D2}";
-            trialDir = Path.Join(subjDir,  StaticDataReport.trialID);
+            StaticDataReport.blockId = currBlock;
+            StaticDataReport.trialId = currTrial;
+            
+            trialDir = Path.Join(subjDir,  StaticDataReport.TrialIdentifier);
             Directory.CreateDirectory(trialDir);
             // ToDo: Create files for data description
             
             // Create FileStreams
-            schema2Stream = new Dictionary<OrderedDictionary<string, DataDescription>, FileStream>();
+            schema2Stream = new Dictionary<Schema, FileStream>();
             foreach (var mapping in schema2filename)
             {
                 var schema = mapping.Key;
@@ -235,13 +235,13 @@ namespace DataHandling
             // Create New Queue
             writeQueue = new BlockingCollection<DataRecord>();
             // start reading from queue. function blocks if empty until cancelled
-            await ReadFromQueue();
+            
             // parallelLoopResult = Parallel.ForEach(
             //     writeQueue.GetConsumingEnumerable(asyncCancellationTokenSource.Token), 
             //     RecordToFile);
         }
 
-        private async Task ReadFromQueue()
+        private Task ReadFromQueue()
         {
             asyncCancellationTokenSource = new CancellationTokenSource();
             while (true)
@@ -345,16 +345,16 @@ namespace DataHandling
         
         public class DataRecord
         {
-            internal OrderedDictionary<string, DataDescription> schema;
+            internal Schema schema;
             internal OrderedDictionary<string, object> data;
 
-            private DataRecord(OrderedDictionary<string, DataDescription> schema)
+            private DataRecord(Schema schema)
             {
                 this.schema = schema;
                 this.data = null;
             }
 
-            public DataRecord(OrderedDictionary<string, DataDescription> schema, OrderedDictionary<string, object> data)
+            public DataRecord(Schema schema, OrderedDictionary<string, object> data)
             {
                 this.schema = schema;
                 this.data = data;
@@ -405,7 +405,7 @@ namespace DataHandling
                 var data = new OrderedDictionary<string, object>()
                 {
                     { "SubjectID", StaticDataReport.subjID },
-                    { "TrialID", StaticDataReport.trialID },
+                    { "TrialID", StaticDataReport.trialId },
                     { "GazeCondition", Enum.GetName(typeof(EyeTracking.EyeTrackingConditions), condition) },
                     { "Hallway", Enum.GetName(typeof(HallwayCreator.Hallways), hallway) },
                     { "Glasses", Enum.GetName(typeof(Glasses), glasses) },
@@ -429,7 +429,7 @@ namespace DataHandling
                 var data = new OrderedDictionary<string, object>()
                 {
                     { "SubjectID", StaticDataReport.subjID },
-                    { "TrialID", StaticDataReport.trialID },
+                    { "TrialID", StaticDataReport.trialId },
                     { "TimeStamp", timestamp},
                     { "XROrigin_Pos",  xrOriginPos},
                     { "XROrigin_Rot",  xrOriginRot},
@@ -463,7 +463,7 @@ namespace DataHandling
                 var data = new OrderedDictionary<string, object>()
                 {
                     { "SubjectID", StaticDataReport.subjID },
-                    { "TrialID", StaticDataReport.trialID },
+                    { "TrialID", StaticDataReport.trialId },
                     { "TimeStamp", timestamp },
                     { "Tracker_TimeStamp", trackerTimestamp },
                     { "Tracker_TrackingImprovementCount", trackerImprovementCount },
@@ -493,7 +493,7 @@ namespace DataHandling
                 var data = new OrderedDictionary<string, object>()
                 {
                     { "SubjectID", StaticDataReport.subjID },
-                    { "TrialID", StaticDataReport.trialID },
+                    { "TrialID", StaticDataReport.trialId },
                     { "TimeStamp", timestamp },
                     { "Tracker_TimeStamp", trackerTimestamp },
                     { "EyeIndex", Enum.GetName(typeof(GazeIndex), which)},
