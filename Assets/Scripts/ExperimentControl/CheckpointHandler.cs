@@ -5,6 +5,7 @@ namespace ExperimentControl
 {
     public class CheckpointHandler : MonoBehaviour
     {
+        internal bool InCheckpoint => checkpointID == int.MaxValue;
         private int checkpointID = int.MaxValue;
         private bool checkpointInFrontOnEnter = false; 
         

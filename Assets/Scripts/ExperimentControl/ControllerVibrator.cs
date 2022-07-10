@@ -19,7 +19,8 @@ namespace ExperimentControl
         private bool externalVibrationOn = false;
         private float oldAmp = float.NegativeInfinity;
 
-        private bool inCollision;
+        internal bool inBox;
+        internal bool inWall;
 
         private void Start()
         {
@@ -81,19 +82,20 @@ namespace ExperimentControl
             
             var triggeringCollider = collision.GetContact(0).thisCollider;
             if (!triggeringCollider.gameObject.CompareTag(gameObject.tag)) return;
-
-            inCollision = true;
+            
             var other = collision.collider;
             var oLayer = other.gameObject.layer;
             Debug.Log($"Controller Collision with {other.gameObject.name} on layer {LayerMask.LayerToName(oLayer)}.");
             if (boxLayer == (boxLayer | (1 << oLayer)))
             {
                 StopAllCoroutines();
+                inBox = true;
                 StartCoroutine(VibrationPattern(boxVibrationFrequency));
             }
             else if (wallLayer == (wallLayer | (1 << oLayer)))
             {
                 StopAllCoroutines();
+                inWall = true;
                 StartCoroutine(VibrationPattern(wallVibrationFrequency));
             }
         }
@@ -101,8 +103,10 @@ namespace ExperimentControl
         private void OnCollisionExit(Collision collision)
         {
             if (externalVibrationOn) return;
-            if (!inCollision) return;
-            
+            if (!(inBox || inWall)) return;
+
+            inBox = false;
+            inWall = false;
             var o = collision.collider.gameObject;
             Debug.Log($"End of Controller Collision with {o.name} on layer {LayerMask.LayerToName(o.layer)}.");
             StopAllCoroutines();

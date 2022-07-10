@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using DataHandling;
+using DataHandling.Separated;
+using ExperimentControl;
 using Unity.VisualScripting;
 using Unity.XR.CoreUtils;
 using UnityEngine;
@@ -57,6 +59,7 @@ namespace Simulation
             {
                 EyeTrackingAvailable = false;
                 Debug.LogWarning("Framework Responded failure to work.");
+                enabled = false;
             }
         }
 
@@ -257,35 +260,60 @@ internal static int TimingIdx;
             // update class variable
             _eyeData = eyeDataRef;
             
-            // Add Data To Database
-            var ticks = DateTime.Now.Ticks;
-            SQLiteHandler.Instance.AddEyeTrackerRecord(
-                StaticDataReport.subjID, StaticDataReport.blockId, StaticDataReport.trialId,
-                eyeDataRef.timestamp, ticks,
-                eyeDataRef.verbose_data.tracking_improvements.count, eyeDataRef.frame_sequence,
-                eyeDataRef.verbose_data.combined.convergence_distance_mm, eyeDataRef.verbose_data.combined.convergence_distance_validity
-            );
-            var singleEye = eyeDataRef.verbose_data.left;
-            SQLiteHandler.Instance.AddSingleEyeRecord(
-                StaticDataReport.subjID, StaticDataReport.blockId, StaticDataReport.trialId,
-                GazeIndex.LEFT, eyeDataRef.timestamp, ticks,
-                singleEye.eye_data_validata_bit_mask, singleEye.eye_openness, singleEye.pupil_diameter_mm,
-                singleEye.pupil_position_in_sensor_area, singleEye.gaze_origin_mm, singleEye.gaze_direction_normalized
-            );
-            singleEye = eyeDataRef.verbose_data.right;
-            SQLiteHandler.Instance.AddSingleEyeRecord(
-                StaticDataReport.subjID, StaticDataReport.blockId, StaticDataReport.trialId,
-                GazeIndex.RIGHT, eyeDataRef.timestamp, ticks,
-                singleEye.eye_data_validata_bit_mask, singleEye.eye_openness, singleEye.pupil_diameter_mm,
-                singleEye.pupil_position_in_sensor_area, singleEye.gaze_origin_mm, singleEye.gaze_direction_normalized
-            );
-            singleEye = eyeDataRef.verbose_data.combined.eye_data;
-            SQLiteHandler.Instance.AddSingleEyeRecord(
-                StaticDataReport.subjID, StaticDataReport.blockId, StaticDataReport.trialId,
-                GazeIndex.COMBINE, eyeDataRef.timestamp, ticks,
-                singleEye.eye_data_validata_bit_mask, singleEye.eye_openness, singleEye.pupil_diameter_mm,
-                singleEye.pupil_position_in_sensor_area, singleEye.gaze_origin_mm, singleEye.gaze_direction_normalized
-            );
+            /************************************
+             * Record Data
+             ************************************/
+            var runner = RunExperiment.Instance;
+            var timestamp = DateTime.Now.Ticks;
+            // record tracker data
+            runner.RecordDataEntry(new EyeTrackerDataRecord
+            {
+                TimeStamp = timestamp,
+                TrackerTimeStamp = eyeDataRef.timestamp,
+                TrackerTrackingImprovementCount = eyeDataRef.verbose_data.tracking_improvements,
+                TrackerFrameCount = eyeDataRef.frame_sequence,
+                ConvergenceDistance = eyeDataRef.verbose_data.combined.convergence_distance_mm,
+                ConvergenceDistanceValidity = eyeDataRef.verbose_data.combined.convergence_distance_validity
+            });
+            // record left eye
+            runner.RecordDataEntry(new SingleEyeDataRecord
+            {
+                TimeStamp = timestamp,
+                TrackerTimeStamp = eyeDataRef.timestamp,
+                EyeIndex = GazeIndex.LEFT,
+                Validity = eyeDataRef.verbose_data.left.eye_data_validata_bit_mask,
+                Openness = eyeDataRef.verbose_data.left.eye_openness,
+                PupilDiameter = eyeDataRef.verbose_data.left.pupil_diameter_mm,
+                PosInSensor = eyeDataRef.verbose_data.left.pupil_position_in_sensor_area,
+                GazeOriginInEye = eyeDataRef.verbose_data.left.gaze_origin_mm,
+                GazeDirectionNormInEye = eyeDataRef.verbose_data.left.gaze_direction_normalized
+            });
+            // record right eye
+            runner.RecordDataEntry(new SingleEyeDataRecord
+            {
+                TimeStamp = timestamp,
+                TrackerTimeStamp = eyeDataRef.timestamp,
+                EyeIndex = GazeIndex.RIGHT,
+                Validity = eyeDataRef.verbose_data.right.eye_data_validata_bit_mask,
+                Openness = eyeDataRef.verbose_data.right.eye_openness,
+                PupilDiameter = eyeDataRef.verbose_data.right.pupil_diameter_mm,
+                PosInSensor = eyeDataRef.verbose_data.right.pupil_position_in_sensor_area,
+                GazeOriginInEye = eyeDataRef.verbose_data.right.gaze_origin_mm,
+                GazeDirectionNormInEye = eyeDataRef.verbose_data.right.gaze_direction_normalized
+            });
+            // record combined eye
+            runner.RecordDataEntry(new SingleEyeDataRecord
+            {
+                TimeStamp = timestamp,
+                TrackerTimeStamp = eyeDataRef.timestamp,
+                EyeIndex = GazeIndex.COMBINE,
+                Validity = eyeDataRef.verbose_data.combined.eye_data.eye_data_validata_bit_mask,
+                Openness = eyeDataRef.verbose_data.combined.eye_data.eye_openness,
+                PupilDiameter = eyeDataRef.verbose_data.combined.eye_data.pupil_diameter_mm,
+                PosInSensor = eyeDataRef.verbose_data.combined.eye_data.pupil_position_in_sensor_area,
+                GazeOriginInEye = eyeDataRef.verbose_data.combined.eye_data.gaze_origin_mm,
+                GazeDirectionNormInEye = eyeDataRef.verbose_data.combined.eye_data.gaze_direction_normalized
+            });
         }
 #endregion
 

@@ -7,7 +7,7 @@ namespace ExperimentControl
     public class CollisionHandler : MonoBehaviour
     {
         private InputHandler inputHandler;
-        private bool inBox;
+        internal bool InBox;
 
         private void Start()
         {
@@ -17,11 +17,11 @@ namespace ExperimentControl
         private void OnCollisionEnter(Collision collision)
         {
             if (collision.contactCount < 1) return;
-            if (inBox)
+            if (InBox)
             {
                 Debug.LogWarning("Walked into a box, while we thought we are in a box.");
             }
-            inBox = true;
+            InBox = true;
             StaticDataReport.CollisionCount += 1;
         
             // start vibration pattern
@@ -30,7 +30,7 @@ namespace ExperimentControl
 
         private void OnCollisionExit(Collision other)
         {
-            inBox = false;
+            InBox = false;
             // stop vibration pattern
             inputHandler.StopCollisionVibration();
         }
