@@ -85,7 +85,7 @@ namespace ExperimentControl
             
             var other = collision.collider;
             var oLayer = other.gameObject.layer;
-            Debug.Log($"Controller Collision with {other.gameObject.name} on layer {LayerMask.LayerToName(oLayer)}.");
+            // Debug.Log($"Controller Collision with {other.gameObject.name} on layer {LayerMask.LayerToName(oLayer)}.");
             if (boxLayer == (boxLayer | (1 << oLayer)))
             {
                 StopAllCoroutines();
@@ -108,7 +108,7 @@ namespace ExperimentControl
             inBox = false;
             inWall = false;
             var o = collision.collider.gameObject;
-            Debug.Log($"End of Controller Collision with {o.name} on layer {LayerMask.LayerToName(o.layer)}.");
+            // Debug.Log($"End of Controller Collision with {o.name} on layer {LayerMask.LayerToName(o.layer)}.");
             StopAllCoroutines();
         }
     }

@@ -16,6 +16,7 @@ namespace ExperimentControl
 
         private void OnCollisionEnter(Collision collision)
         {
+            if (RunExperiment.Instance.betweenTrials) return;
             if (collision.contactCount < 1) return;
             if (InBox)
             {
@@ -30,6 +31,7 @@ namespace ExperimentControl
 
         private void OnCollisionExit(Collision other)
         {
+            if (RunExperiment.Instance.betweenTrials) return;
             InBox = false;
             // stop vibration pattern
             inputHandler.StopCollisionVibration();

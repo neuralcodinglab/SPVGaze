@@ -48,6 +48,7 @@ namespace DataHandling.Separated
         public int TrackerFrameCount { get; set; }
         public float ConvergenceDistance { get; set; }
         public bool ConvergenceDistanceValidity { get; set; }
+        public int ErrorsSinceLastUpdate { get; set; }
     }
 
     public struct SingleEyeDataRecord : IDataStructure

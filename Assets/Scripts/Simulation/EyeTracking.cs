@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using DataHandling;
 using DataHandling.Separated;
 using ExperimentControl;
@@ -19,7 +21,7 @@ namespace Simulation
     public class EyeTracking : MonoBehaviour
     {
         [SerializeField] private LayerMask hallwayLayerMask;
-
+        
         [Header("Eye Tracking Parameter")]
         public float sphereCastRadius = 0.01f;
         public float sphereCastDistance = 20f;
@@ -31,6 +33,8 @@ namespace Simulation
         private static bool _updatingEye2ScreenPosition;
         
         private PhospheneSimulator sim;
+
+        public double GazeRaySensitivity => _eyeParameter.gaze_ray_parameter.sensitive_factor;
         internal bool EyeTrackingAvailable { get; private set; }
 
         public enum EyeTrackingConditions
@@ -39,6 +43,12 @@ namespace Simulation
         }
         
 #region Unity Event Functions
+
+        private void Awake()
+        {
+            SenorSummarySingletons.RegisterType(this);
+        }
+
         private void Start()
         {
             // Headset needs a few frames to register and initialise
@@ -49,8 +59,14 @@ namespace Simulation
             // find reference to simulator
             sim = GetComponent<PhospheneSimulator>();
             smoothingThresholdSq = smoothingThreshold * smoothingThreshold;
+            
+            lastMeasuredPositionsL = new FixedSizeList<SmoothData>(12);
+            lastSmoothedPositionsL = new FixedSizeList<SmoothData>(12);
+            lastMeasuredPositionsR = new FixedSizeList<SmoothData>(12);
+            lastSmoothedPositionsR = new FixedSizeList<SmoothData>(12);
+            lastMeasuredPositionsC = new FixedSizeList<SmoothData>(12);
+            lastSmoothedPositionsC = new FixedSizeList<SmoothData>(12);
 
-            SenorSummarySingletons.RegisterType(this);
         }
         
         private void FixedUpdate()
@@ -71,7 +87,7 @@ namespace Simulation
                 return;
             }
 
-            _eyeDataFreeze = Cloning.Clone(_eyeData, new FieldsCloner(), false);
+            _eyeDataFreeze = _eyeData.Clone(new FieldsCloner(), false);
             
             FocusInfo focusInfo;
             // try to get focus point from combined gaze origin
@@ -191,26 +207,34 @@ namespace Simulation
             }
             // unfiltered data please
             var param = new EyeParameter();
-            param.gaze_ray_parameter.sensitive_factor = 1f;
-            SRanipal_Eye_API.SetEyeParameter(param);
+            param.gaze_ray_parameter.sensitive_factor = 1.0;
+            var setEyeParamResult = SRanipal_Eye_API.SetEyeParameter(param);
 
             var eyeDataResult = SRanipal_Eye_API.GetEyeData_v2(ref _eyeData);
             var eyeParamResult = SRanipal_Eye_API.GetEyeParameter(ref _eyeParameter);
             var resultEyeInit = SRanipal_API.Initial(SRanipal_Eye_v2.ANIPAL_TYPE_EYE_V2, IntPtr.Zero);
-            
+
             if (
                 eyeDataResult != Error.WORK ||
                 eyeParamResult != Error.WORK ||
-                resultEyeInit != Error.WORK
+                resultEyeInit != Error.WORK ||
+                setEyeParamResult != Error.WORK
             )
             {
                 Debug.LogError("Initial Check failed.\n" +
                                $"[SRanipal] Eye Data Call v2 : {eyeDataResult}" +
                                $"[SRanipal] Eye Param Call v2: {eyeParamResult}" +
-                               $"[SRanipal] Initial Eye v2   : {resultEyeInit}"
+                               $"[SRanipal] Initial Eye v2   : {resultEyeInit}" +
+                               $"[SRanipal] Set Eye v2   : {resultEyeInit}"
                 );
                 EyeTrackingAvailable = false;
                 return;
+            }
+
+            if (Math.Abs(_eyeParameter.gaze_ray_parameter.sensitive_factor -
+                         param.gaze_ray_parameter.sensitive_factor) > 1e-5)
+            {
+                Debug.LogError($"Retrieved Parameter ({_eyeParameter.gaze_ray_parameter.sensitive_factor}) different to set parameter for gaze sensitivity ({param.gaze_ray_parameter.sensitive_factor}).");
             }
 
             EyeTrackingAvailable = true;
@@ -241,6 +265,7 @@ namespace Simulation
 
 internal static readonly float[] Timings = Enumerable.Repeat(float.MinValue, 500).ToArray();
 internal static int TimingIdx;
+private static int errorInUpdate = 0;
 
         [MonoPInvokeCallback]
         private static void EyeCallback(ref EyeData_v2 eyeDataRef)
@@ -250,12 +275,12 @@ internal static int TimingIdx;
             var tick = now.Hour * 3600f + now.Minute * 60f + now.Second + now.Millisecond / 1000f;
             Timings[TimingIdx] = tick;
             
-            var eyeParameter = new EyeParameter();
-            var retrievalOutcome = SRanipal_Eye_API.GetEyeParameter(ref eyeParameter);
-            var outcome = Enum.GetName(typeof(Error), retrievalOutcome);
-
             var fetchResult = SRanipal_Eye_API.GetEyeData_v2(ref eyeDataRef);
-            if (fetchResult != Error.WORK) return;
+            if (fetchResult != Error.WORK)
+            {
+                errorInUpdate += 1;
+                return;
+            }
             
             // update class variable
             _eyeData = eyeDataRef;
@@ -263,56 +288,68 @@ internal static int TimingIdx;
             /************************************
              * Record Data
              ************************************/
-            var runner = RunExperiment.Instance;
             var timestamp = DateTime.Now.Ticks;
+            var dataClone = eyeDataRef.CloneViaSerialization();
+            new Task(() =>
+                {
+                    RecordTrackerData(dataClone, errorInUpdate, timestamp);
+                }).Start();
+            
+            errorInUpdate = 0;
+        }
+
+        private static void RecordTrackerData(EyeData_v2 eyedata, int errorsSince, long timestamp)
+        {
+            var runner = RunExperiment.Instance;
             // record tracker data
             runner.RecordDataEntry(new EyeTrackerDataRecord
             {
                 TimeStamp = timestamp,
-                TrackerTimeStamp = eyeDataRef.timestamp,
-                TrackerTrackingImprovementCount = eyeDataRef.verbose_data.tracking_improvements,
-                TrackerFrameCount = eyeDataRef.frame_sequence,
-                ConvergenceDistance = eyeDataRef.verbose_data.combined.convergence_distance_mm,
-                ConvergenceDistanceValidity = eyeDataRef.verbose_data.combined.convergence_distance_validity
+                TrackerTimeStamp = eyedata.timestamp,
+                TrackerTrackingImprovementCount = eyedata.verbose_data.tracking_improvements,
+                TrackerFrameCount = eyedata.frame_sequence,
+                ConvergenceDistance = eyedata.verbose_data.combined.convergence_distance_mm,
+                ConvergenceDistanceValidity = eyedata.verbose_data.combined.convergence_distance_validity,
+                ErrorsSinceLastUpdate = errorsSince
             });
             // record left eye
             runner.RecordDataEntry(new SingleEyeDataRecord
             {
                 TimeStamp = timestamp,
-                TrackerTimeStamp = eyeDataRef.timestamp,
+                TrackerTimeStamp = eyedata.timestamp,
                 EyeIndex = GazeIndex.LEFT,
-                Validity = eyeDataRef.verbose_data.left.eye_data_validata_bit_mask,
-                Openness = eyeDataRef.verbose_data.left.eye_openness,
-                PupilDiameter = eyeDataRef.verbose_data.left.pupil_diameter_mm,
-                PosInSensor = eyeDataRef.verbose_data.left.pupil_position_in_sensor_area,
-                GazeOriginInEye = eyeDataRef.verbose_data.left.gaze_origin_mm,
-                GazeDirectionNormInEye = eyeDataRef.verbose_data.left.gaze_direction_normalized
+                Validity = eyedata.verbose_data.left.eye_data_validata_bit_mask,
+                Openness = eyedata.verbose_data.left.eye_openness,
+                PupilDiameter = eyedata.verbose_data.left.pupil_diameter_mm,
+                PosInSensor = eyedata.verbose_data.left.pupil_position_in_sensor_area,
+                GazeOriginInEye = eyedata.verbose_data.left.gaze_origin_mm,
+                GazeDirectionNormInEye = eyedata.verbose_data.left.gaze_direction_normalized
             });
             // record right eye
             runner.RecordDataEntry(new SingleEyeDataRecord
             {
                 TimeStamp = timestamp,
-                TrackerTimeStamp = eyeDataRef.timestamp,
+                TrackerTimeStamp = eyedata.timestamp,
                 EyeIndex = GazeIndex.RIGHT,
-                Validity = eyeDataRef.verbose_data.right.eye_data_validata_bit_mask,
-                Openness = eyeDataRef.verbose_data.right.eye_openness,
-                PupilDiameter = eyeDataRef.verbose_data.right.pupil_diameter_mm,
-                PosInSensor = eyeDataRef.verbose_data.right.pupil_position_in_sensor_area,
-                GazeOriginInEye = eyeDataRef.verbose_data.right.gaze_origin_mm,
-                GazeDirectionNormInEye = eyeDataRef.verbose_data.right.gaze_direction_normalized
+                Validity = eyedata.verbose_data.right.eye_data_validata_bit_mask,
+                Openness = eyedata.verbose_data.right.eye_openness,
+                PupilDiameter = eyedata.verbose_data.right.pupil_diameter_mm,
+                PosInSensor = eyedata.verbose_data.right.pupil_position_in_sensor_area,
+                GazeOriginInEye = eyedata.verbose_data.right.gaze_origin_mm,
+                GazeDirectionNormInEye = eyedata.verbose_data.right.gaze_direction_normalized
             });
             // record combined eye
             runner.RecordDataEntry(new SingleEyeDataRecord
             {
                 TimeStamp = timestamp,
-                TrackerTimeStamp = eyeDataRef.timestamp,
+                TrackerTimeStamp = eyedata.timestamp,
                 EyeIndex = GazeIndex.COMBINE,
-                Validity = eyeDataRef.verbose_data.combined.eye_data.eye_data_validata_bit_mask,
-                Openness = eyeDataRef.verbose_data.combined.eye_data.eye_openness,
-                PupilDiameter = eyeDataRef.verbose_data.combined.eye_data.pupil_diameter_mm,
-                PosInSensor = eyeDataRef.verbose_data.combined.eye_data.pupil_position_in_sensor_area,
-                GazeOriginInEye = eyeDataRef.verbose_data.combined.eye_data.gaze_origin_mm,
-                GazeDirectionNormInEye = eyeDataRef.verbose_data.combined.eye_data.gaze_direction_normalized
+                Validity = eyedata.verbose_data.combined.eye_data.eye_data_validata_bit_mask,
+                Openness = eyedata.verbose_data.combined.eye_data.eye_openness,
+                PupilDiameter = eyedata.verbose_data.combined.eye_data.pupil_diameter_mm,
+                PosInSensor = eyedata.verbose_data.combined.eye_data.pupil_position_in_sensor_area,
+                GazeOriginInEye = eyedata.verbose_data.combined.eye_data.gaze_origin_mm,
+                GazeDirectionNormInEye = eyedata.verbose_data.combined.eye_data.gaze_direction_normalized
             });
         }
 #endregion
@@ -391,7 +428,6 @@ internal static int TimingIdx;
                 GazeIndex.COMBINE => lastMeasuredPositionsC,
                 _ => throw new ArgumentOutOfRangeException(nameof(which), which, null)
             };
-            lastMeasuredPositions ??= new FixedSizeList<SmoothData>(12);
 
             var lastSmoothedPositions = which switch
             {
@@ -400,7 +436,6 @@ internal static int TimingIdx;
                 GazeIndex.COMBINE => lastSmoothedPositionsC,
                 _ => throw new ArgumentOutOfRangeException(nameof(which), which, null)
             };
-            lastSmoothedPositions ??= new FixedSizeList<SmoothData>(12);
 
             // retrieve last measurement
             if (!lastMeasuredPositions.GetLast(out var prevMeasure))
@@ -462,7 +497,6 @@ internal static int TimingIdx;
         {
             // ReSharper disable MemberCanBePrivate.Local
             public int Size { get; }
-            protected new readonly int Capacity;
             // ReSharper enable MemberCanBePrivate.Local
 
             public FixedSizeList(int size) : base(size)
@@ -498,7 +532,7 @@ internal static int TimingIdx;
                 {
                     RemoveAt(0);
                     base.Add(obj);
-                    if (Count != Capacity || Count != Size || !obj.Equals(this.ElementAt(Count - 1)))
+                    if (Count != Capacity || Count != Size)
                     {
                         Debug.LogError("FixedSizeList not so fixed.");
                     }

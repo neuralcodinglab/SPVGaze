@@ -1,6 +1,9 @@
 using System;
 using System.IO;
+using ExperimentControl;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.InputSystem;
 using UnityEngine.XR;
@@ -28,7 +31,7 @@ namespace Simulation
 
         // Image processing settings
         private float runSimulation = 0;
-        private bool runEdgeDetection = false;
+        private bool runEdgeDetection = true;
         
         // protected RenderTextureDescriptor ActvTexDesc;
         private RenderTexture actvTex, simRenderTex;
@@ -39,6 +42,10 @@ namespace Simulation
         [Header("Phosphene Initialisation")]
         [SerializeField] private bool initialiseFromFile;
         [SerializeField] private string phospheneConfigFile;
+        [Header("Dynamic Phosphene Generation")]
+        [SerializeField] private int numberOfPhosphenes = 1000;
+        [SerializeField] private float maxEccentricityRadius = .15f;
+        [Header("Debug: (Save Layout as image)")]
         [SerializeField] private bool debugPhoshpenes;
         private PhospheneConfig phospheneConfig;
         private int nPhosphenes;
@@ -51,7 +58,19 @@ namespace Simulation
         [SerializeField] protected ComputeShader simulationComputeShader;
         
         // Eye tracking
-        [SerializeField] protected EyeTracking.EyeTrackingConditions eyeTrackingCondition;
+        private EyeTracking.EyeTrackingConditions gazeCondition;
+        [NonSerialized]
+        public UnityEvent<EyeTracking.EyeTrackingConditions> onChangeGazeCondition;
+        protected EyeTracking.EyeTrackingConditions EyeTrackingCondition
+        {
+            get => gazeCondition;
+            set
+            {
+              if (value == gazeCondition) return;
+              gazeCondition = value;
+              onChangeGazeCondition?.Invoke(value);
+            }
+        }
         private readonly int nEyeTrackingModes = Enum.GetValues(typeof(EyeTracking.EyeTrackingConditions)).Length;
         private Vector2 eyePosLeft, eyePosRight, eyePosCentre;
         
@@ -59,6 +78,10 @@ namespace Simulation
         private int kernelActivations, kernelSpread, kernelClean;
         private int threadX, threadY, threadPhosphenes;
         private bool headsetInitialised = false;
+        
+        // experiment refs
+        public CollisionHandler boxChecker;
+        public CheckpointHandler checkpointChecker;
         
         #region Shader Properties Name-To-Int
         // Rendering related
@@ -99,7 +122,8 @@ namespace Simulation
             } catch (FileNotFoundException){ }
           }
           // if boolean is false, the file path is not given or the initialising from file failed, initialise probabilistic
-          phospheneConfig ??= PhospheneConfig.InitPhosphenesProbabilistically(1000, .15f, PhospheneConfig.Monopole, debugPhoshpenes);
+          phospheneConfig ??= PhospheneConfig.InitPhosphenesProbabilistically(
+            numberOfPhosphenes, maxEccentricityRadius, PhospheneConfig.Monopole, debugPhoshpenes);
           
           nPhosphenes = phospheneConfig.phosphenes.Length;
           phospheneBuffer = new ComputeBuffer(nPhosphenes, sizeof(float)*7);
@@ -127,14 +151,15 @@ namespace Simulation
           // set up shader for focusdot
           focusDotMaterial = new Material(Shader.Find("Xarphos/FocusDot"));
           focusDotMaterial.SetInt(ShPrRenderFocusDotToggle, 1);
+
+          onChangeGazeCondition = new UnityEvent<EyeTracking.EyeTrackingConditions>();
+          SenorSummarySingletons.RegisterType(this);
         }
 
         private void Start()
         {
           // replace surfaces with in editor selected variant
           SurfaceReplacement.ActivateReplacementShader(targetCamera, surfaceReplacementMode);
-
-          SenorSummarySingletons.RegisterType(this);
         }
 
         private void OnRenderImage(RenderTexture src, RenderTexture target)
@@ -282,13 +307,13 @@ namespace Simulation
         public void NextEyeTrackingCondition(InputAction.CallbackContext ctx) => NextEyeTrackingCondition();
         private void NextEyeTrackingCondition()
         {
-          SetGazeTrackingCondition((EyeTracking.EyeTrackingConditions)((int)(eyeTrackingCondition + 1) % nEyeTrackingModes));
+          SetGazeTrackingCondition((EyeTracking.EyeTrackingConditions)((int)(EyeTrackingCondition + 1) % nEyeTrackingModes));
         }
         
         public void SetGazeTrackingCondition(EyeTracking.EyeTrackingConditions condition)
         {
-          eyeTrackingCondition = condition;
-          switch (eyeTrackingCondition)
+          EyeTrackingCondition = condition;
+          switch (EyeTrackingCondition)
           {
             // reset and don't use gaze info
             case EyeTracking.EyeTrackingConditions.GazeIgnored:
@@ -311,13 +336,27 @@ namespace Simulation
         public void ToggleEdgeDetection(InputAction.CallbackContext ctx) => ToggleEdgeDetection();
         private void ToggleEdgeDetection()
         {
-          runEdgeDetection = !runEdgeDetection;
+          SetEdgeDetection(!runEdgeDetection);
+        }
+        
+        public void SetEdgeDetection(bool val)
+        {
+          runEdgeDetection = val;
         }
         
         public void TogglePhospheneSim(InputAction.CallbackContext ctx) => TogglePhospheneSim();
         public void TogglePhospheneSim()
         {
-          runSimulation = 1-runSimulation;
+          SetPhospheneSim(1-runSimulation);
+        }
+        public void SetPhospheneSim(bool val)
+        {
+          SetPhospheneSim(val ? 1f : 0f);
+        }
+
+        public void SetPhospheneSim(float val)
+        {
+          runSimulation = val > 0 ? 1f : 0f;
         }
         #endregion
 
@@ -354,6 +393,25 @@ namespace Simulation
             
             SetEyePosition(lViewSpace, rViewSpace, cViewSpace);
           }
+        }
+
+        public void StartTrial(EyeTracking.EyeTrackingConditions condition)
+        {
+          boxChecker.gameObject.SetActive(true);
+          checkpointChecker.gameObject.SetActive(true);
+          
+          SetEdgeDetection(true);
+          SetPhospheneSim(true);
+          SetGazeTrackingCondition(condition);
+        }
+
+        public void StopTrial()
+        {
+          boxChecker.gameObject.SetActive(false);
+          checkpointChecker.gameObject.SetActive(false);
+          
+          SetEdgeDetection(false);
+          SetPhospheneSim(false);
         }
     }
 }

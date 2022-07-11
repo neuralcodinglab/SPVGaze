@@ -1,3 +1,4 @@
+using System;
 using DataHandling;
 using UnityEngine;
 
@@ -5,10 +6,21 @@ namespace ExperimentControl
 {
     public class CheckpointHandler : MonoBehaviour
     {
-        internal bool InCheckpoint => checkpointID == int.MaxValue;
+        internal bool InCheckpoint => checkpointID != int.MaxValue;
         private int checkpointID = int.MaxValue;
-        private bool checkpointInFrontOnEnter = false; 
-        
+        private bool checkpointInFrontOnEnter = false;
+        private float lastCheckPointZ = float.MinValue;
+
+        private void Start()
+        {
+            SenorSummarySingletons.GetInstance<InputHandler>().onChangeHallway.AddListener(_ =>
+            {
+                checkpointID = int.MaxValue;
+                checkpointInFrontOnEnter = false;
+                lastCheckPointZ = float.MinValue;
+            });
+        }
+
         private void OnCollisionEnter(Collision collision)
         {
             var other = collision.gameObject;
@@ -18,7 +30,17 @@ namespace ExperimentControl
                 Debug.LogWarning("Checkpoint ID was not reset correctly.");
             }
             checkpointID = other.GetInstanceID();
-            checkpointInFrontOnEnter = Mathf.Sign(other.transform.position.z - transform.position.z) > 0;
+            var prevCpZ = lastCheckPointZ;
+            lastCheckPointZ = other.transform.position.z;
+
+            if (Math.Abs(prevCpZ - float.MinValue) > 1e-5 && 
+                Mathf.Abs(Mathf.Abs(prevCpZ - lastCheckPointZ) - HallwayCreator.SectionSize) > 1e-5)
+            {
+                Debug.LogWarning("It seems we missed a checkpoint? Increasing counter;");
+                StaticDataReport.InZone += Math.Sign(lastCheckPointZ - prevCpZ);
+            }
+            
+            checkpointInFrontOnEnter = Mathf.Sign(lastCheckPointZ - transform.position.z) > 0;
         }
 
         private void OnCollisionExit(Collision collision)
@@ -46,7 +68,7 @@ namespace ExperimentControl
                 default:
                     break; // did not cross, but entered and moved back out            
             }
-            Debug.Log($"Passed checkpoint! Now in zone {StaticDataReport.InZone}");
+            // Debug.Log($"Passed checkpoint! Now in zone {StaticDataReport.InZone}");
         }
     }
 }

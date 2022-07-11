@@ -5,8 +5,11 @@ using System.IO;
 using System.Linq;
 using DataHandling;
 using DataHandling.Separated;
+using ExperimentControl.UI;
 using Simulation;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.InputSystem;
 using ViveSR.anipal;
 using ViveSR.anipal.Eye;
 using Random = UnityEngine.Random;
@@ -20,9 +23,9 @@ namespace ExperimentControl
         public CheckpointHandler zoneCounter;
         public GameObject xrHead;
         public GameObject handLeft;
-        private ControllerVibrator leftController;
+        internal ControllerVibrator LeftController;
         public GameObject handRight;
-        private ControllerVibrator rightController;
+        internal ControllerVibrator RightController;
         
         public static RunExperiment Instance { get; private set; }
 
@@ -52,9 +55,12 @@ namespace ExperimentControl
         private Data2File EngineDataHandler { get; set; }
         private Data2File EyeTrackerDataHandler { get; set; }
         private Data2File SingleEyeDataHandler { get; set; }
-        private IEnumerable<Data2File> _allHandlers; 
+        private IEnumerable<Data2File> allHandlers; 
         
-        private bool trialCompleted = true;
+        internal bool betweenTrials = true;
+
+        public UnityEvent trialCompleted;
+        public UnityEvent blockCompleted;
 
         private void Awake()
         {
@@ -70,50 +76,77 @@ namespace ExperimentControl
             EyeTrackerDataHandler.DataStructure = typeof(EyeTrackerDataRecord);
             SingleEyeDataHandler = gameObject.AddComponent<Data2File>();
             SingleEyeDataHandler.DataStructure = typeof(SingleEyeDataRecord);
-            _allHandlers = new List<Data2File>
+            allHandlers = new List<Data2File>
             {
                 TrialConfigHandler,
                 EngineDataHandler,
                 EyeTrackerDataHandler,
                 SingleEyeDataHandler
             };
+
+            trialCompleted ??= new UnityEvent();
+            blockCompleted ??= new UnityEvent();
         }
 
         private void Start()
         {
-            leftController = handLeft.GetComponentInChildren<ControllerVibrator>();
-            rightController = handRight.GetComponentInChildren<ControllerVibrator>();
+            LeftController = handLeft.GetComponentInChildren<ControllerVibrator>();
+            RightController = handRight.GetComponentInChildren<ControllerVibrator>();
+        }
+
+        private bool lastSecondRecording;
+
+        private void Update()
+        {
+            if (!lastSecondRecording && StaticDataReport.InZone >= lastZone)
+            {
+                lastSecondRecording = true;
+                Invoke(nameof(EndTrial), 1f);
+            }
+        }
+
+        public void EndTrial()
+        {
+            StaticDataReport.InZone = 0;
+            lastZone = int.MaxValue;
+            lastSecondRecording = false;
+            betweenTrials = true;
+            
+            foreach(var h in allHandlers) h.StopTrial();
+            
+            trialCompleted?.Invoke();
+            StartNewTrial();
         }
 
         private void FixedUpdate()
         {
-            if (trialCompleted) return;
-            
-            RecordDataEntry(new EngineDataRecord
-            {
-                TimeStamp = DateTime.Now.Ticks,
-                XROriginPos = xrOrigin.transform.position,
-                XROriginRot = xrOrigin.transform.rotation,
-                XROriginInBox = boxCheck.InBox,
-                XROriginInCheckpoint = zoneCounter.InCheckpoint,
-                XRHeadPos = xrHead.transform.position,
-                XRHeadRot = xrHead.transform.rotation,
-                HandLPos = handLeft.transform.position,
-                HandLRot = handLeft.transform.rotation,
-                HandLInBox = leftController.inBox,
-                HandLInWall = leftController.inWall,
-                HandRPos = handRight.transform.position,
-                HandRRot = handRight.transform.rotation,
-                HandRInBox = rightController.inBox,
-                HandRInWall = rightController.inWall,
-                CollisionCount = StaticDataReport.CollisionCount,
-                CheckpointCount = StaticDataReport.InZone,
-                FrameCount = Time.frameCount,
-            });
+            if (betweenTrials) return;
+
+            var record = new EngineDataRecord(); 
+            record.TimeStamp = DateTime.Now.Ticks;
+            record.XROriginPos = xrOrigin.transform.position;
+            record.XROriginRot = xrOrigin.transform.rotation;
+            record.XROriginInBox = boxCheck.InBox;
+            record.XROriginInCheckpoint = zoneCounter.InCheckpoint;
+            record.XRHeadPos = xrHead.transform.position;
+            record.XRHeadRot = xrHead.transform.rotation;
+            record.HandLPos = handLeft.transform.position;
+            record.HandLRot = handLeft.transform.rotation;
+            record.HandLInBox = LeftController.inBox;
+            record.HandLInWall = LeftController.inWall;
+            record.HandRPos = handRight.transform.position;
+            record.HandRRot = handRight.transform.rotation;
+            record.HandRInBox = RightController.inBox;
+            record.HandRInWall = RightController.inWall;
+            record.CollisionCount = StaticDataReport.CollisionCount;
+            record.CheckpointCount = StaticDataReport.InZone;
+            record.FrameCount = Time.frameCount;
+
+            RecordDataEntry(record);
         }
 
         public void StartExperiment(string subjId)
-        {
+        {           
             // Shuffle hallway-condition matrix
             _blocks = _blocks.OrderBy(_ => Random.value).ToList();
             _blocks[0] = _blocks[0].OrderBy(_ => Random.value).ToList();
@@ -127,57 +160,80 @@ namespace ExperimentControl
                 var tmp = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
                 Debug.LogWarning($"Subject Directory for {subjId} exists. Replacing with {tmp}");
                 subjId = tmp;
+                SenorSummarySingletons.GetInstance<UICallbacks>().subjID.text = subjId;
             }
-            foreach(var h in _allHandlers) h.NewSubject(subjId);
+            foreach(var h in allHandlers) h.NewSubject(subjId);
             
             // and go
-            StartCoroutine(StartNewBlock(0));
+            currBlock = -1;
+            StartNewBlock();
         }
 
-        private IEnumerator StartNewBlock(int blockIdx)
+        private int currBlock = -1;
+        private int currTrial = -1;
+        private int lastZone = int.MaxValue;
+
+        public void StartNewBlock()
         {
-            var trials = _blocks[blockIdx];
-            for (var i=0; i < trials.Count; i+=1)
+            currBlock += 1;
+            if (currBlock > _blocks.Count - 1)
             {
-                var (condition, hallway) = trials[i];
-                
-                EyeParameter eyeparams = new EyeParameter();
-                SRanipal_Eye_API.GetEyeParameter(ref eyeparams);
-                RecordDataEntry(new TrialConfigRecord()
-                {
-                    GazeCondition = condition,
-                    Hallway = hallway,
-                    Glasses = Glasses.Contacts,
-                    GazeRaySensitivity = eyeparams.gaze_ray_parameter.sensitive_factor,
-                    DataDelimiter = Data2File.Delimiter,
-                });
-                
-                trialCompleted = false;
-                StartCoroutine(StartNewTrial(condition, hallway));
-                foreach (var h in _allHandlers) h.NewTrial(blockIdx, i);
-                yield return new WaitUntil(() => trialCompleted);
+                ConcludeBlock();
+                return;
             }
+            
+            currTrial = -1;
+            
+            StartNewTrial();
         }
 
-        private IEnumerator StartNewTrial(EyeTracking.EyeTrackingConditions condition, HallwayCreator.Hallways hallway)
+        private void StartNewTrial()
         {
+            currTrial += 1;
+            StaticDataReport.InZone = 0;
+            lastZone = int.MaxValue;
+            StaticDataReport.CollisionCount = 0;
+
+            if (currTrial > _blocks[currBlock].Count - 1)
+            {
+                ConcludeBlock();
+                if (currBlock < _blocks.Count)
+                    blockCompleted?.Invoke();
+                return;
+            }
+            
+            // update UI
+            SenorSummarySingletons.GetInstance<UICallbacks>().UpdateBlockAndTrial(currBlock + 1, currTrial + 1);
+
+            var (condition, hallway) = _blocks[currBlock][currTrial];
+            lastZone = HallwayCreator.HallwayObjects[hallway].LastZoneId;
+
+            foreach(var h in allHandlers) h.NewTrial(currBlock, currTrial);
+            
             SenorSummarySingletons.GetInstance<InputHandler>().MoveToNewHallway(HallwayCreator.HallwayObjects[hallway]);
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().SetGazeTrackingCondition(condition);
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().StartTrial(condition);
             
-            yield return new WaitUntil(CheckTrialCompleted);
-            
-            foreach(var h in _allHandlers) h.StopTrial();
+            betweenTrials = false;
+            RecordDataEntry(new TrialConfigRecord
+            {
+                GazeCondition = condition,
+                Hallway = hallway,
+                Glasses = (Glasses)SenorSummarySingletons.GetInstance<UICallbacks>().glassesDropdown.value,
+                GazeRaySensitivity = SenorSummarySingletons.GetInstance<EyeTracking>().GazeRaySensitivity,
+                DataDelimiter = Data2File.Delimiter,
+            });
         }
 
-        private bool CheckTrialCompleted()
+        private void ConcludeBlock()
         {
-            trialCompleted = StaticDataReport.InZone > 5;
-            return trialCompleted;
+            SenorSummarySingletons.GetInstance<UICallbacks>().BtnPlayground();
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().StopTrial();
+            SenorSummarySingletons.GetInstance<UICallbacks>().PostBlock(allHandlers);
         }
 
         private void RecordDataEntry(IDataStructure entry, Data2File handler)
         {
-            if(trialCompleted) return;
+            if(betweenTrials) return;
             
             handler.AddRecord(entry);
         }

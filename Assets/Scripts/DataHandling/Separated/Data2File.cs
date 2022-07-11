@@ -6,7 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Sirenix.Utilities;
+using Unity.VisualScripting;
 using UnityEngine;
 using ViveSR.anipal.Eye;
 using Quaternion = System.Numerics.Quaternion;
@@ -27,15 +27,15 @@ namespace DataHandling.Separated
     public class Data2File : MonoBehaviour, IDataHandler
     {
         public string FileName { get; protected set; }
-        public const string FileEnding = ".csv";
+        public const string FileEnding = ".tsv";
         public const string Delimiter = "\t";
         
         private bool isInitialised;
-        private Type _dataType;
+        private Type dataType;
 
         public Type DataStructure
         {
-            get => _dataType;
+            get => dataType;
             set => Init(value);
         }
 
@@ -45,20 +45,24 @@ namespace DataHandling.Separated
         protected Queue<IDataStructure> WriteQ;
         protected PropertyInfo[] Properties;
         protected string Header;
+        
+        internal IList<Task> TaskList;
+        internal IList<Queue<IDataStructure>> RemainingItems;
+        internal IList<FileStream> OldStreams;
 
         private void Init(Type dataStructure)
         {
             if (isInitialised) return;
-            if (!dataStructure.ImplementsOrInherits(typeof(IDataStructure)))
+            if ( dataStructure.GetInterface(nameof(IDataStructure)) == null )
             {
                 throw new ArgumentException($"Tried to initialse Data Handler with a type that is not IDataStructure: {dataStructure}");
             }
             
             isInitialised = true;
-            _dataType = dataStructure;
+            dataType = dataStructure;
 
-            FileName = _dataType.Name;
-            Properties = _dataType.GetProperties();
+            FileName = dataType.Name;
+            Properties = dataType.GetProperties();
             Header = ToCsvFields(Properties.Select(prop => prop.Name));
         }
 
@@ -84,7 +88,7 @@ namespace DataHandling.Separated
 
             if (IsRecording) 
                 throw new InvalidOperationException("Forgot to end last trial before starting new one");
-
+            
             var trialStr = $"{blockId:D2}_{trialId:D2}";
             Fs = new FileStream(
                 Path.Join(SubjectDir, trialStr + FileName + FileEnding),
@@ -115,26 +119,47 @@ namespace DataHandling.Separated
         public void AddRecord(IDataStructure record)
         {
             CheckInitialised();
-            if (record.GetType() != _dataType)
+            if (record.GetType() != dataType)
             {
                 throw new ArgumentException(
-                    $"Handed over incorrect Data Structure. Expected {_dataType}, but got {record.GetType()}");
+                    $"Handed over incorrect Data Structure. Expected {dataType}, but got {record.GetType()}");
             }
 
             WriteQ.Enqueue(record);
         }
 
-        public async void StopTrial()
+        private async Task RunCleanUp()
+        {
+            IsRecording = false;
+            if (WriteQ == null && Fs == null) return;
+            
+            StopAllCoroutines();
+            var remainingEntries = WriteQ;
+            RemainingItems ??= new List<Queue<IDataStructure>>();
+            RemainingItems.Add(remainingEntries);
+
+            OldStreams ??= new List<FileStream>();
+            var oldFs = Fs;
+            OldStreams.Add(oldFs);
+            
+            // Debug.Log($"Stopping Co-Routine. Still writing {remainingEntries.Length} entries to file.");
+            while (remainingEntries.TryDequeue(out var entry))
+            {
+                var row = Record2Row(entry);
+                await Row2File(row);
+            }
+            await oldFs.FlushAsync();
+            oldFs.Close();
+            
+            RemainingItems.Remove(remainingEntries);
+            OldStreams.Remove(oldFs);
+        }
+
+        public void StopTrial()
         {
             CheckInitialised();
-
-            IsRecording = false;
-            while (WriteQ.Count > 0)
-            {
-                await Task.Yield();
-            }
-            await Fs.FlushAsync();
-            Fs.Close();
+            TaskList ??= new List<Task>();
+            TaskList.Add(RunCleanUp());
         }
         
         protected string Record2Row(IDataStructure entry)
@@ -198,6 +223,28 @@ namespace DataHandling.Separated
 
             if (addEol) row += "\n";
             return row;
+        }
+
+        private void WaitForFileWritingToComplete()
+        {
+            if (TaskList == null) return;
+            // Debug.Log($"Waiting for {TaskList.Count(t => !t.IsCompleted)} tasks to finish.");
+            Task.WaitAll(TaskList.ToArray());
+        }
+
+        private void OnDestroy()
+        {
+            WaitForFileWritingToComplete();
+        }
+
+        private void OnDisable()
+        {
+            WaitForFileWritingToComplete();
+        }
+
+        ~Data2File()
+        {
+            WaitForFileWritingToComplete();
         }
     }
 }

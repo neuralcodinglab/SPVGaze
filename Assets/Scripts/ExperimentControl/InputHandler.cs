@@ -1,6 +1,8 @@
+using System;
 using Simulation;
 using Unity.XR.CoreUtils;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using UnityEngine.XR.Interaction.Toolkit;
@@ -147,7 +149,12 @@ namespace ExperimentControl
 #endregion
 
 
-private void Start()
+        private void Awake()
+        {
+            SenorSummarySingletons.RegisterType(this);
+        }
+
+        private void Start()
         {
             xrOrigin = GetComponent<XROrigin>();
             coll ??= GetComponent<Collider>();
@@ -168,15 +175,17 @@ private void Start()
                 MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Hallway3]);
             MoveToPlaygroundAction.action.performed += ctx =>
                 MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Playground]);
-
-            SenorSummarySingletons.RegisterType(this);
         }
+
+        public UnityEvent<HallwayCreator.Hallway> onChangeHallway;
 
         public void MoveToNewHallway(HallwayCreator.Hallway config)
         {
             transform.position = new Vector3(config.StartX, 0, 0);
             transform.rotation = Quaternion.Euler(Vector3.zero);
             SetBoundaries(config.WallLeft, config.WallRight, config.WallStart, config.WallEnd);
+            
+            onChangeHallway?.Invoke(config);
         }
 
         public void SetBoundaries(GameObject wallLeft, GameObject wallRight, GameObject wallStart, GameObject wallEnd)
@@ -248,9 +257,15 @@ private void Start()
         public void RegisterControllerReference(ControllerVibrator controller, bool isRight)
         {
             if (isRight)
+            {
                 rightController = controller;
+                RunExperiment.Instance.RightController = controller;
+            }
             else
+            {
                 leftController = controller;
+                RunExperiment.Instance.LeftController = controller;
+            }
         }
     }
 }

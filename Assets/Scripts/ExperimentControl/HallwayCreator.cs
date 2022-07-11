@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace ExperimentControl
 {
     public class HallwayCreator : MonoBehaviour
     {
-        private float sectionSize = 2f;
-        private float wallHeight = 2.7f;
+        internal const float SectionSize = 2f;
+        internal const float WallHeight = 2.7f;
         public GameObject HW_Empty, HW_smL, HW_smC, HW_smR, HW_lgLC, HW_lgCR, HW_lgLR, HW_Wall;
 
         public struct Hallway
@@ -18,6 +19,7 @@ namespace ExperimentControl
             public GameObject WallEnd;
             public GameObject WallLeft;
             public GameObject WallRight;
+            public int LastZoneId;
         }
         
         #region Hallway Definition & Mapping
@@ -49,6 +51,13 @@ namespace ExperimentControl
                 { HallwaySections.LargeLeftRight, HW_lgLR }
             };
             HallwayObjects = new Dictionary<Hallways, Hallway>();
+            
+            SenorSummarySingletons.RegisterType(this);
+            
+            CreateHallway(playground, -SectionSize*2, Hallways.Playground);
+            CreateHallway(hallway1, 0, Hallways.Hallway1);
+            CreateHallway(hallway2, SectionSize*2, Hallways.Hallway2);
+            CreateHallway(hallway3, SectionSize*4, Hallways.Hallway3);
         }
 
         // map 1 & 5 ; 2 & 3 ; 6 & 7
@@ -131,12 +140,7 @@ namespace ExperimentControl
 
         private void Start()
         {
-            CreateHallway(playground, -sectionSize*2, Hallways.Playground);
-            CreateHallway(hallway1, 0, Hallways.Hallway1);
-            CreateHallway(hallway2, sectionSize*2, Hallways.Hallway2);
-            CreateHallway(hallway3, sectionSize*4, Hallways.Hallway3);
-
-            SenorSummarySingletons.RegisterType(this);
+            SenorSummarySingletons.GetInstance<InputHandler>().MoveToNewHallway(HallwayObjects[Hallways.Playground]);
         }
 
         private void CreateHallway(IEnumerable<HallwaySections> layout, float startX, Hallways which)
@@ -152,7 +156,7 @@ namespace ExperimentControl
             // wall at the start
             var wall = Instantiate(
                 HW_Wall,
-                new Vector3(startX, wallHeight / 2f, -1.5f*sectionSize),
+                new Vector3(startX, WallHeight / 2f, -1.5f*SectionSize),
                 Quaternion.Euler(0, 90, 0),
                 parent.transform
             );
@@ -161,7 +165,7 @@ namespace ExperimentControl
             wall.transform.localScale = scale;
             collect.WallStart = wall;
             // empty room behind start
-            var room1 = inst(HW_Empty, -sectionSize);
+            var room1 = inst(HW_Empty, -SectionSize);
             wall = room1.transform.Find("Wall_L").gameObject;
             collect.WallLeft = wall;
             wall = room1.transform.Find("Wall_R").gameObject;
@@ -169,19 +173,20 @@ namespace ExperimentControl
             // empty starting room
             inst(HW_Empty, 0);
             // generate hallway
-            float currZ = sectionSize;
-            foreach (var section in layout)
+            float currZ = SectionSize;
+            var sections = layout as HallwaySections[] ?? layout.ToArray();
+            foreach (var section in sections)
             {
                 var prefab = section2Gameobject[section];
                 inst(prefab, currZ);
-                currZ += sectionSize;
+                currZ += SectionSize;
             }
             // empty last room
             inst(HW_Empty, currZ);
             // wall at the end
             wall = Instantiate(
                 HW_Wall,
-                new Vector3(startX, wallHeight / 2f, currZ + sectionSize / 2f),
+                new Vector3(startX, WallHeight / 2f, currZ + SectionSize / 2f),
                 Quaternion.Euler(0, 90, 0),
                 parent.transform
             );
@@ -190,6 +195,7 @@ namespace ExperimentControl
             wall.transform.localScale = scale;
             collect.WallEnd = wall;
 
+            collect.LastZoneId = sections.Length + 1;
             HallwayObjects[which] = collect;
         }
 
