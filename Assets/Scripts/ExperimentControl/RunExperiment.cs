@@ -95,14 +95,21 @@ namespace ExperimentControl
         }
 
         private bool lastSecondRecording;
+        private bool manuallyEndedTrial;
 
         private void Update()
         {
-            if (!lastSecondRecording && StaticDataReport.InZone >= lastZone)
+            if (!lastSecondRecording && StaticDataReport.InZone >= lastZone && !manuallyEndedTrial)
             {
                 lastSecondRecording = true;
                 Invoke(nameof(EndTrial), 1f);
             }
+        }
+
+        public void ManuallyEndTrial()
+        {
+            manuallyEndedTrial = true;
+            Invoke(nameof(EndTrial), 1f);
         }
 
         public void EndTrial()
@@ -111,6 +118,8 @@ namespace ExperimentControl
             lastZone = int.MaxValue;
             lastSecondRecording = false;
             betweenTrials = true;
+            
+            manuallyEndedTrial = false;
             
             foreach(var h in allHandlers) h.StopTrial();
             

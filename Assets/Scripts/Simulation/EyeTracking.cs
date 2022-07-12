@@ -60,12 +60,12 @@ namespace Simulation
             sim = GetComponent<PhospheneSimulator>();
             smoothingThresholdSq = smoothingThreshold * smoothingThreshold;
             
-            lastMeasuredPositionsL = new FixedSizeList<SmoothData>(12);
-            lastSmoothedPositionsL = new FixedSizeList<SmoothData>(12);
-            lastMeasuredPositionsR = new FixedSizeList<SmoothData>(12);
-            lastSmoothedPositionsR = new FixedSizeList<SmoothData>(12);
-            lastMeasuredPositionsC = new FixedSizeList<SmoothData>(12);
-            lastSmoothedPositionsC = new FixedSizeList<SmoothData>(12);
+            lastMeasuredPositionsL = new FixedSizeList<SmoothData>(smoothingBuffer);
+            lastSmoothedPositionsL = new FixedSizeList<SmoothData>(smoothingBuffer);
+            lastMeasuredPositionsR = new FixedSizeList<SmoothData>(smoothingBuffer);
+            lastSmoothedPositionsR = new FixedSizeList<SmoothData>(smoothingBuffer);
+            lastMeasuredPositionsC = new FixedSizeList<SmoothData>(smoothingBuffer);
+            lastSmoothedPositionsC = new FixedSizeList<SmoothData>(smoothingBuffer);
 
         }
         
@@ -396,6 +396,7 @@ private static int errorInUpdate = 0;
         [SerializeField] private float smoothingT = 1.5f;
         [SerializeField] private float smoothingTFast = 0.05f;
         [SerializeField] private float smoothingThreshold = 0.05f; // default value ~5 degree of visual field
+        private readonly int smoothingBuffer = 8;
         private float smoothingThresholdSq;
         private float smoothingTReturn;
         private float smoothingTReturnSpeed = float.MinValue;

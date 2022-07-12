@@ -1,11 +1,12 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 
 namespace Xarphos.Scripts
 {
 
 
-public class SurfaceReplacement: MonoBehaviour
+public class SurfaceReplacement : MonoBehaviour
 {
 	public static Shader replacementShader = Shader.Find("Xarphos/SurfaceReplacement");
 
@@ -17,6 +18,7 @@ public class SurfaceReplacement: MonoBehaviour
 		DepthMultichannel	= 4,
 		Normals	= 5
 	}
+
 
 	public static void ActivateReplacementShader(Camera target, ReplacementModes replacementMode){
 		if (replacementMode == ReplacementModes.None)

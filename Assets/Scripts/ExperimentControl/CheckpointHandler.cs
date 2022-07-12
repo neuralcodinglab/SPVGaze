@@ -6,6 +6,9 @@ namespace ExperimentControl
 {
     public class CheckpointHandler : MonoBehaviour
     {
+        public Transform head;
+        public Collider coll;
+        
         internal bool InCheckpoint => checkpointID != int.MaxValue;
         private int checkpointID = int.MaxValue;
         private bool checkpointInFrontOnEnter = false;
@@ -20,9 +23,22 @@ namespace ExperimentControl
                 lastCheckPointZ = float.MinValue;
             });
         }
+        
+        private void LateUpdate()
+        {
+            var myPos = transform.position;
+            var headPos = head.position;
+            if (Math.Abs(myPos.x - headPos.x) < 1e-5 && Math.Abs(myPos.z - headPos.z) < 1e-5)
+                return;
+            
+            headPos.y = myPos.y;
+            transform.position = headPos;
+        }
 
         private void OnCollisionEnter(Collision collision)
         {
+            if (RunExperiment.Instance.betweenTrials) return;
+            
             var other = collision.gameObject;
             // starting to cross checkpoint
             if (checkpointID != int.MaxValue)
@@ -45,6 +61,8 @@ namespace ExperimentControl
 
         private void OnCollisionExit(Collision collision)
         {
+            if (RunExperiment.Instance.betweenTrials) return;
+            
             var other = collision.gameObject;
             if (other.GetInstanceID() != checkpointID)
             {

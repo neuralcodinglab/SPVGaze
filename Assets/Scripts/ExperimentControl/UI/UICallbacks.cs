@@ -199,6 +199,21 @@ namespace ExperimentControl.UI
             if (taskChecking != null) StopCoroutine(taskChecking);
             postExperimentMonitoring.SetActive(false);
         }
+
+        public void BtnCycleSurface()
+        {
+            GetNullSafe<PhospheneSimulator>().NextSurfaceReplacementMode(new InputAction.CallbackContext());
+        }
+
+        public void BtnToggleFocusDot()
+        {
+            GetNullSafe<PhospheneSimulator>().ToggleFocusDot();
+        }
+
+        public void BtnResetAlignment()
+        {
+            SenorSummarySingletons.GetInstance<InputHandler>().ResetCamera2OriginAlignment();
+        }
         
 
         private void ReturnFromCalibration()

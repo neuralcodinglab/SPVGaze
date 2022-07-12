@@ -32,6 +32,7 @@ namespace Simulation
         // Image processing settings
         private float runSimulation = 0;
         private bool runEdgeDetection = true;
+        private int renderFocusDot = 1;
         
         // protected RenderTextureDescriptor ActvTexDesc;
         private RenderTexture actvTex, simRenderTex;
@@ -150,7 +151,7 @@ namespace Simulation
 
           // set up shader for focusdot
           focusDotMaterial = new Material(Shader.Find("Xarphos/FocusDot"));
-          focusDotMaterial.SetInt(ShPrRenderFocusDotToggle, 1);
+          focusDotMaterial.SetInt(ShPrRenderFocusDotToggle, renderFocusDot);
 
           onChangeGazeCondition = new UnityEvent<EyeTracking.EyeTrackingConditions>();
           SenorSummarySingletons.RegisterType(this);
@@ -301,6 +302,8 @@ namespace Simulation
         public void NextSurfaceReplacementMode(InputAction.CallbackContext ctx) => NextSurfaceReplacementMode();
         private void NextSurfaceReplacementMode(){
           surfaceReplacementMode = (SurfaceReplacement.ReplacementModes)((int)(surfaceReplacementMode + 1) % nSurfaceModes);
+          // replace surfaces with in editor selected variant
+          SurfaceReplacement.ActivateReplacementShader(targetCamera, surfaceReplacementMode);
         }
 
         // cycle eye tracking conditions
@@ -357,6 +360,22 @@ namespace Simulation
         public void SetPhospheneSim(float val)
         {
           runSimulation = val > 0 ? 1f : 0f;
+        }
+        
+        public void ToggleFocusDot(InputAction.CallbackContext ctx) => ToggleFocusDot();
+        public void ToggleFocusDot()
+        {
+          SetFocusDot(1-renderFocusDot);
+        }
+        public void ToggleFocusDot(bool val)
+        {
+          SetFocusDot(val ? 1 : 0);
+        }
+
+        public void SetFocusDot(int val)
+        {
+          renderFocusDot = val;
+          focusDotMaterial.SetInt(ShPrRenderFocusDotToggle, renderFocusDot);
         }
         #endregion
 

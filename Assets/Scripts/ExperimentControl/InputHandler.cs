@@ -10,9 +10,12 @@ using UnityEngine.XR.Interaction.Toolkit.Inputs;
 
 namespace ExperimentControl
 {
-    [RequireComponent(typeof(XROrigin))]
     public class InputHandler : MonoBehaviour
     {
+        public GameObject xrOriginObj;
+        public Transform head;
+        public XROrigin xrOrigin;
+        
         [Header("Subject Movement Control")]
         public float moveSpeed= 3f;
         public bool forwardIsHeadRotation = true;
@@ -23,7 +26,6 @@ namespace ExperimentControl
         [Header("Collision Detection")]
         public Collider coll;
 
-        private XROrigin xrOrigin;
         private float xBoundLeft = float.NegativeInfinity, xBoundRight=float.PositiveInfinity,
             zBoundBack=float.NegativeInfinity, zBoundForward = float.PositiveInfinity;
 
@@ -151,12 +153,13 @@ namespace ExperimentControl
 
         private void Awake()
         {
+            xrOrigin ??= xrOriginObj.GetComponent<XROrigin>();
             SenorSummarySingletons.RegisterType(this);
         }
 
         private void Start()
         {
-            xrOrigin = GetComponent<XROrigin>();
+            if (xrOrigin == null) throw new ArgumentNullException(nameof(xrOrigin), "Did not find Xr Origin Object");
             coll ??= GetComponent<Collider>();
 
             var simulator = FindObjectOfType<PhospheneSimulator>();
@@ -181,8 +184,8 @@ namespace ExperimentControl
 
         public void MoveToNewHallway(HallwayCreator.Hallway config)
         {
-            transform.position = new Vector3(config.StartX, 0, 0);
-            transform.rotation = Quaternion.Euler(Vector3.zero);
+            xrOrigin.Origin.transform.position = new Vector3(config.StartX, 0, 0);
+            xrOrigin.Origin.transform.rotation = Quaternion.Euler(Vector3.zero);
             SetBoundaries(config.WallLeft, config.WallRight, config.WallStart, config.WallEnd);
             
             onChangeHallway?.Invoke(config);
@@ -197,34 +200,65 @@ namespace ExperimentControl
             zBoundForward = wallEnd.GetComponent<Collider>().bounds.min.z - coll.bounds.extents.z;
         }
 
+        public void ResetCamera2OriginAlignment()
+        {
+            var head = SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.position;
+            var originTransform = xrOrigin.transform;
+            var y = originTransform.position.y;
+            var pos = new Vector3(head.x, y, head.z);
+            originTransform.position = pos;
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.position = head;
+        }
+
         private void Update()
         {
             Move();
         }
 
+        private void LateUpdate()
+        {
+            var myPos = transform.position;
+            var headPos = head.position;
+            if (Math.Abs(myPos.x - headPos.x) < 1e-5 && Math.Abs(myPos.z - headPos.z) < 1e-5)
+                return;
+            
+            headPos.y = myPos.y;
+            transform.position = headPos;
+        }
+
         private void Move()
         {
             var move = _move * (Time.deltaTime * moveSpeed);
+            var camT = xrOrigin.Camera.transform;
 
             if (forwardIsHeadRotation)
             {
-                var fwd = Vector3.forward;
-                var dir = xrOrigin.Camera.transform.forward;
-                dir.y = 0;
-                dir.Normalize();
-                var cos = Vector3.Dot(dir, fwd);
-                var sin = Vector3.Cross(dir, fwd).magnitude;
-
-                // apply rotation to align with camera forward vector
-                move = new Vector3(move.x * cos - move.z * sin, 0, move.x * sin + move.z * cos);
+                var size = move.magnitude;
+                move = camT.forward * move.z + camT.right * move.x;
+                move.y = 0;
+                var newSize = move.magnitude;
+                if (newSize >= 1e-25f)
+                {
+                    move *= size / newSize;
+                }
+                // var dir = camT.forward;
+                // dir.y = 0;
+                // dir.Normalize();
+                // var cos = Vector3.Dot(dir, fwd);
+                // var sin = Vector3.Cross(dir, fwd).magnitude;
+                //
+                // // apply rotation to align with camera forward vector
+                // move = new Vector3(move.x * cos - move.z * sin, 0, move.x * sin + move.z * cos);
             }
 
-            var newPos = xrOrigin.Origin.transform.localPosition + move;
+            var camPos = camT.position;
+            var offset = xrOrigin.Origin.transform.position - camPos;
+            var newPos = camPos + move;
             // ensure new position stays within wall bounds
             newPos.x = Mathf.Clamp(newPos.x, xBoundLeft, xBoundRight);
             newPos.z = Mathf.Clamp(newPos.z, zBoundBack, zBoundForward);
         
-            xrOrigin.Origin.transform.localPosition = newPos;
+            xrOrigin.Origin.transform.position = newPos + offset;
         }
         
         public void Move(InputAction.CallbackContext ctx)

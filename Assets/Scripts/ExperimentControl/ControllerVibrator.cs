@@ -30,7 +30,7 @@ namespace ExperimentControl
                 Debug.LogWarning("Found no controller in parent;");
                 gameObject.SetActive(false);
             }
-            GetComponentInParent<InputHandler>().RegisterControllerReference(this, transform.parent.name.ToLower().StartsWith("right"));
+            SenorSummarySingletons.GetInstance<InputHandler>().RegisterControllerReference(this, transform.parent.name.ToLower().StartsWith("right"));
         }
 
         public void ExternalVibrationStart(float frequency, float amplitude=.7f)
