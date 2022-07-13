@@ -193,6 +193,8 @@ namespace ExperimentControl.UI
 
         public void BtnRunNextBlock()
         {
+            SRanipal_Eye_API.LaunchEyeCalibration(Marshal.GetFunctionPointerForDelegate(new Action(ReturnFromCalibration)));
+            
             RunExperiment.Instance.StartNewBlock();
             btnNextBlockObj.interactable = false;
             

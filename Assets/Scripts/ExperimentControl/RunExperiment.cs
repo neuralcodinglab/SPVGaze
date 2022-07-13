@@ -54,7 +54,9 @@ namespace ExperimentControl
         private Data2File TrialConfigHandler { get; set; }
         private Data2File EngineDataHandler { get; set; }
         private Data2File EyeTrackerDataHandler { get; set; }
-        private Data2File SingleEyeDataHandler { get; set; }
+        private Data2File SingleEyeDataHandlerL { get; set; }
+        private Data2File SingleEyeDataHandlerR { get; set; }
+        private Data2File SingleEyeDataHandlerC { get; set; }
         private IEnumerable<Data2File> allHandlers; 
         
         internal bool betweenTrials = true;
@@ -74,14 +76,23 @@ namespace ExperimentControl
             EngineDataHandler.DataStructure = typeof(EngineDataRecord);
             EyeTrackerDataHandler = gameObject.AddComponent<Data2File>();
             EyeTrackerDataHandler.DataStructure = typeof(EyeTrackerDataRecord);
-            SingleEyeDataHandler = gameObject.AddComponent<Data2File>();
-            SingleEyeDataHandler.DataStructure = typeof(SingleEyeDataRecord);
+            SingleEyeDataHandlerL = gameObject.AddComponent<Data2File>();
+            SingleEyeDataHandlerL.DataStructure = typeof(SingleEyeDataRecord);
+            SingleEyeDataHandlerL.FileName += "L";
+            SingleEyeDataHandlerR = gameObject.AddComponent<Data2File>();
+            SingleEyeDataHandlerR.DataStructure = typeof(SingleEyeDataRecord);
+            SingleEyeDataHandlerR.FileName += "R";
+            SingleEyeDataHandlerC = gameObject.AddComponent<Data2File>();
+            SingleEyeDataHandlerC.DataStructure = typeof(SingleEyeDataRecord);
+            SingleEyeDataHandlerC.FileName += "C";
             allHandlers = new List<Data2File>
             {
                 TrialConfigHandler,
                 EngineDataHandler,
                 EyeTrackerDataHandler,
-                SingleEyeDataHandler
+                SingleEyeDataHandlerL,
+                SingleEyeDataHandlerR,
+                SingleEyeDataHandlerC
             };
 
             trialCompleted ??= new UnityEvent();
@@ -250,7 +261,24 @@ namespace ExperimentControl
         public void RecordDataEntry(TrialConfigRecord entry) => RecordDataEntry(entry, TrialConfigHandler);
         public void RecordDataEntry(EngineDataRecord entry) => RecordDataEntry(entry, EngineDataHandler);
         public void RecordDataEntry(EyeTrackerDataRecord entry) => RecordDataEntry(entry, EyeTrackerDataHandler);
-        public void RecordDataEntry(SingleEyeDataRecord entry) => RecordDataEntry(entry, SingleEyeDataHandler);
+
+        public void RecordDataEntry(SingleEyeDataRecord entry)
+        {
+            switch (entry.EyeIndex)
+            {
+                case GazeIndex.LEFT:
+                    RecordDataEntry(entry, SingleEyeDataHandlerL);
+                    break;
+                case GazeIndex.RIGHT:
+                    RecordDataEntry(entry, SingleEyeDataHandlerR);
+                    break;
+                case GazeIndex.COMBINE:
+                    RecordDataEntry(entry, SingleEyeDataHandlerC);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
 
     }
 }

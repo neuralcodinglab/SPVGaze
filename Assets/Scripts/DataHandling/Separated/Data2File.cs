@@ -26,7 +26,7 @@ namespace DataHandling.Separated
     /// </summary>
     public class Data2File : MonoBehaviour, IDataHandler
     {
-        public string FileName { get; protected set; }
+        public string FileName { get; internal set; }
         public const string FileEnding = ".tsv";
         public const string Delimiter = "\t";
         
@@ -109,7 +109,16 @@ namespace DataHandling.Separated
             {
                 while (WriteQ.TryDequeue(out var entry))
                 {
-                    var row = Record2Row(entry);
+                    string row;
+                    try
+                    {
+                        row = Record2Row(entry);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogWarning($"Writing entry to file failed. DataStructture {dataType.Name}. Exception: {e}");
+                        continue;
+                    }
                     yield return Row2File(row);
                 }
                 yield return null;

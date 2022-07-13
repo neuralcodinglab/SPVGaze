@@ -195,7 +195,7 @@ namespace ExperimentControl
             wall.transform.localScale = scale;
             collect.WallEnd = wall;
 
-            collect.LastZoneId = sections.Length + 1;
+            collect.LastZoneId = sections.Length;
             HallwayObjects[which] = collect;
         }
 
