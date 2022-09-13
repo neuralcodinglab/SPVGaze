@@ -172,6 +172,12 @@ namespace ExperimentControl.UI
             GetNullSafe<PhospheneSimulator>().TogglePhospheneSim();
         }
 
+        
+        public void BtnToggleEdgeDetection()
+        {
+            GetNullSafe<PhospheneSimulator>().ToggleEdgeDetection(new InputAction.CallbackContext());
+        }
+        
         public void BtnCycleGaze()
         {
             GetNullSafe<PhospheneSimulator>().NextEyeTrackingCondition(new InputAction.CallbackContext());
