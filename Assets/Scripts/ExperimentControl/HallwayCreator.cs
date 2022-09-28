@@ -54,10 +54,10 @@ namespace ExperimentControl
             
             SenorSummarySingletons.RegisterType(this);
             
-            CreateHallway(playground, -SectionSize*2, Hallways.Playground);
-            CreateHallway(hallway1, 0, Hallways.Hallway1);
-            CreateHallway(hallway2, SectionSize*2, Hallways.Hallway2);
-            CreateHallway(hallway3, SectionSize*4, Hallways.Hallway3);
+            // CreateHallway(playground, -SectionSize*2, Hallways.Playground);
+            // CreateHallway(hallway1, 0, Hallways.Hallway1);
+            // CreateHallway(hallway2, SectionSize*2, Hallways.Hallway2);
+            // CreateHallway(hallway3, SectionSize*4, Hallways.Hallway3);
         }
 
         // map 1 & 5 ; 2 & 3 ; 6 & 7
@@ -140,7 +140,7 @@ namespace ExperimentControl
 
         private void Start()
         {
-            SenorSummarySingletons.GetInstance<InputHandler>().MoveToNewHallway(HallwayObjects[Hallways.Playground]);
+            // SenorSummarySingletons.GetInstance<InputHandler>().MoveToNewHallway(HallwayObjects[Hallways.Playground]);
         }
 
         private void CreateHallway(IEnumerable<HallwaySections> layout, float startX, Hallways which)
