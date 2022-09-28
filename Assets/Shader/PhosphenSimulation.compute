@@ -58,6 +58,8 @@ void CalculateActivations (uint3 id : SV_DispatchThreadID)
   uint2 index = uint2((uint)(samplePosition.x * ScreenResolution.x), (uint)(samplePosition.y * ScreenResolution.y));
   float stim = InputTexture[uint3(index, eyeIdx)].x;
 
+  //TODO: sample activation with receptive field size
+
   //***************************************************************************
   // Update activation and trace
   //***************************************************************************
