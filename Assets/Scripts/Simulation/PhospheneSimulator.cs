@@ -172,6 +172,12 @@ namespace Simulation
           // in between texture to put processed image on before blitting from this to target
           var preTargetPing = RenderTexture.GetTemporary(target.descriptor);
           
+          // TODO: support low-res rendertexture? (thicker edges and less compute...
+          // var descriptor = target.descriptor;
+          // descriptor.height = (int)descriptor.height / 4;
+          // descriptor.width = (int)descriptor.height / 4;
+          // var preTargetPing = RenderTexture.GetTemporary(descriptor);
+          
           // Run edge detection shader if toggled on
           if (runEdgeDetection)
             Graphics.Blit(src, preTargetPing, imageProcessingMaterial);
