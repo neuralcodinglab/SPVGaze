@@ -31,7 +31,7 @@ namespace Simulation
 
         // Image processing settings
         private float runSimulation = 0;
-        private bool runEdgeDetection = true;
+        private bool runEdgeDetection = false;
         private int renderFocusDot = 0;
         
         // protected RenderTextureDescriptor ActvTexDesc;
