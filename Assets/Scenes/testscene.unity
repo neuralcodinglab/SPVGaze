@@ -31190,10 +31190,10 @@ MonoBehaviour:
   setManualEyePos: 0
   manualEyePos: {x: 0.5, y: 0.5}
   inputEffect: 1
-  intensityDecay: 0.9
-  traceIncrease: 0.7
-  traceDecay: 0.5
-  surfaceReplacementMode: 5
+  intensityDecay: 0
+  traceIncrease: 0
+  traceDecay: 0
+  surfaceReplacementMode: 0
   initialiseFromFile: 0
   phospheneConfigFile: 
   numberOfPhosphenes: 700
