@@ -28,7 +28,9 @@ namespace Simulation
         private float traceIncrease = 0.1f; // The habituation strength: the factor by which stimulation leads to buildup of memory trace
         [SerializeField]
         private float traceDecay = 0.9f; // The factor by which the stimulation memory trace decreases
-
+        [SerializeField] 
+        private float relativeRFSize = 4.0f; // the size of the 'receptive field' (sampling area) relative to the phosphene size 
+        
         // Image processing settings
         private float runSimulation = 0;
         private bool runEdgeDetection = false;
@@ -107,6 +109,7 @@ namespace Simulation
         private static readonly int ShPrIntensityDecay = Shader.PropertyToID("intensity_decay");
         private static readonly int ShPrTraceIncrease = Shader.PropertyToID("trace_increase");
         private static readonly int ShPrTraceDecay = Shader.PropertyToID("trace_decay");
+        private static readonly int ShPrRelaltiveRFSize = Shader.PropertyToID("_RelativeRFSize");
       
         #endregion
 
@@ -138,6 +141,7 @@ namespace Simulation
           simulationComputeShader.SetFloat(ShPrIntensityDecay, intensityDecay);
           simulationComputeShader.SetFloat(ShPrTraceIncrease, traceIncrease);
           simulationComputeShader.SetFloat(ShPrTraceDecay, traceDecay);
+          simulationComputeShader.SetFloat(ShPrRelaltiveRFSize, relativeRFSize);
 
           simulationComputeShader.SetBuffer(0, ShPrPhospheneBuffer, phospheneBuffer);
           // Set the default EyeTrackingCondition (Ignore Gaze)

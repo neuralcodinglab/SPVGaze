@@ -31193,6 +31193,7 @@ MonoBehaviour:
   intensityDecay: 0
   traceIncrease: 0
   traceDecay: 0
+  relativeRFSize: 8
   surfaceReplacementMode: 0
   initialiseFromFile: 0
   phospheneConfigFile: 

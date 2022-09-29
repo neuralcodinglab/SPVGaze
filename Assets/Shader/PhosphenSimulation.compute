@@ -26,6 +26,7 @@ float input_effect;     // The factor by which stimulation accumulates to phosph
 float intensity_decay;  // The factor by which previous activation still influences current activation
 float trace_increase;   // The habituation strength: the factor by which stimulation leads to buildup of memory trace
 float trace_decay;      // The factor by which the stimulation memory trace decreases
+float _RelativeRFSize;  // The size of the 'receptive field' of the phosphene (sampling radius for activation)
 
 RWStructuredBuffer<Phosphene> phosphenes;
 
@@ -57,8 +58,28 @@ void CalculateActivations (uint3 id : SV_DispatchThreadID)
   // Read stimulation value from input texture
   uint2 index = uint2((uint)(samplePosition.x * ScreenResolution.x), (uint)(samplePosition.y * ScreenResolution.y));
   float stim = InputTexture[uint3(index, eyeIdx)].x;
-
-  //TODO: sample activation with receptive field size
+  
+  // Sample the activation over the entire 'receptive field' of the phosphene
+  const uint rfSize = phosphenes[phosIdx].size * _RelativeRFSize * ScreenResolution.x;;
+  for (uint xOff=0; xOff < rfSize; xOff++)
+  {
+    for (uint yOff=0; yOff < rfSize; yOff++)
+    {
+      // Center was already added before these loops
+      if (xOff + yOff == 0)
+        continue;
+      
+      // if we are past radius, move to next x-location, as we won't be inside the circle again if we increase the radius
+      if ((yOff*yOff + xOff*xOff) >= (rfSize * rfSize))
+        break;
+  
+      // Sample in the four quadrants around the index location (max pooling)
+      stim = max(stim, InputTexture[uint3(index.x + xOff, index.y + yOff, id.z)]);
+      stim = max(stim, InputTexture[uint3(index.x - xOff, index.y + yOff, id.z)]) * (float)(xOff>0); // Don't sample the vert. midline twice
+      stim = max(stim, InputTexture[uint3(index.x + xOff, index.y - yOff, id.z)]) * (float)(yOff>0); // Don't sample the hor. midline twice
+      stim = max(stim, InputTexture[uint3(index.x - xOff, index.y - yOff, id.z)]) * (float)(yOff>0) * (float)(xOff>0);
+    }
+  }
 
   //***************************************************************************
   // Update activation and trace
@@ -105,6 +126,7 @@ void SpreadActivations(uint3 id : SV_DispatchThreadID)
   float2 pixel = ActivationTexture[id];
   const float actv = pixel.x;
   const float size = pixel.y;
+  
   // if it's a pixel without activation or radius, we are done
   if (size < 1e-5 || actv < 0.001) { return; }
 
