@@ -286,8 +286,30 @@
                 },
                 {
                     "name": "",
+                    "id": "db35bdf7-d8d7-4944-a08e-9cd82919349b",
+                    "path": "<XRInputV1::HTC::HTCViveControllerOpenXR>{RightHand}/triggerpressed",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "XR",
+                    "action": "TogglePhospheneSim",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "0d48eca3-feac-46bd-a760-06ecc1e0d7c0",
                     "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleEdgeDetection",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "1227cf49-fc39-4a7f-b1a5-699465719252",
+                    "path": "<ViveController>{RightHand}/menu",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -308,8 +330,30 @@
                 },
                 {
                     "name": "",
+                    "id": "67db424b-2487-441b-bcc3-684ccecd9f7d",
+                    "path": "<XRInputV1::HTC::HTCViveControllerOpenXR>{LeftHand}/triggerpressed",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "XR",
+                    "action": "IterateSurfaceReplacement",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "32e146f2-3d6a-4d6f-9e5b-4356f0dbd45e",
                     "path": "<Keyboard>/4",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ToggleEyeTrackingMode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b78c6c59-2ba8-4256-99b8-f23f0e42b361",
+                    "path": "<ViveController>{LeftHand}/menu",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
