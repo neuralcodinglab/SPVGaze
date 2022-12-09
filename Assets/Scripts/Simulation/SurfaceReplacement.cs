@@ -33,7 +33,9 @@ public class SurfaceReplacement : MonoBehaviour
 		foreach (var r in renderers)
 		{
 			var id = r.gameObject.GetInstanceID();
+			var layer = r.gameObject.layer;
 			mpb.SetColor("_ObjectColor", EncodeIDAsColor(id));
+			mpb.SetColor("_CategoryColor", EncodeLayerAsColor(layer));
 			r.SetPropertyBlock(mpb);
 			mpb.SetInt("_OutputMode",(int)replacementMode);
 		}
