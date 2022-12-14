@@ -57,7 +57,7 @@ void CalculateActivations (uint3 id : SV_DispatchThreadID)
 
   // Read stimulation value from input texture
   uint2 index = uint2((uint)(samplePosition.x * ScreenResolution.x), (uint)(samplePosition.y * ScreenResolution.y));
-  float stim = InputTexture[uint3(index, eyeIdx)].x;
+  float stim = InputTexture[uint3(index, eyeIdx)].x; //JR TODO: this should be changed (no stereovision!)
   
   // Sample the activation over the entire 'receptive field' of the phosphene
   const uint rfSize = phosphenes[phosIdx].size * _RelativeRFSize * ScreenResolution.x;;
@@ -75,9 +75,9 @@ void CalculateActivations (uint3 id : SV_DispatchThreadID)
   
       // Sample in the four quadrants around the index location (max pooling)
       stim = max(stim, InputTexture[uint3(index.x + xOff, index.y + yOff, id.z)]);
-      stim = max(stim, InputTexture[uint3(index.x - xOff, index.y + yOff, id.z)]) * (float)(xOff>0); // Don't sample the vert. midline twice
-      stim = max(stim, InputTexture[uint3(index.x + xOff, index.y - yOff, id.z)]) * (float)(yOff>0); // Don't sample the hor. midline twice
-      stim = max(stim, InputTexture[uint3(index.x - xOff, index.y - yOff, id.z)]) * (float)(yOff>0) * (float)(xOff>0);
+      stim = max(stim, InputTexture[uint3(index.x - xOff, index.y + yOff, id.z)]);
+      stim = max(stim, InputTexture[uint3(index.x + xOff, index.y - yOff, id.z)]);
+      stim = max(stim, InputTexture[uint3(index.x - xOff, index.y - yOff, id.z)]);
     }
   }
 
@@ -140,7 +140,7 @@ void SpreadActivations(uint3 id : SV_DispatchThreadID)
   const float sigma = size * 2.0;
 
   // after 3 deviations, tail is near unobservable, so spread up to 3 deviations
-  const uint max_r = size * 4.0 * ScreenResolution.x; // 2 deviations for performance
+  const uint max_r = size * 6.0 * ScreenResolution.x; // 2 deviations for performance
   // to save sqrt for radius comparison save r^2
   const uint maxr2 = max_r * max_r;
 
