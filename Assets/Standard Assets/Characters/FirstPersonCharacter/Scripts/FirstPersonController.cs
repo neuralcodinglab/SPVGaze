@@ -1,3 +1,8 @@
+# define NEW_INPUT_SYSTEM
+# if NEW_INPUT_SYSTEM
+# else
+
+
 using System;
 using UnityEngine;
 using UnityStandardAssets.CrossPlatformInput;
@@ -257,3 +262,4 @@ namespace UnityStandardAssets.Characters.FirstPerson
         }
     }
 }
+# endif
