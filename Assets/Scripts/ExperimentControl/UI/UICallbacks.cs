@@ -180,7 +180,16 @@ namespace ExperimentControl.UI
         
         public void BtnNextLocation()
         {
-            GetNullSafe<SceneManager>().NextLocation(new InputAction.CallbackContext());
+            GetNullSafe<SceneHandler>().NextHouseLocation(new InputAction.CallbackContext());
+        }
+        public void BtnNextRoom()
+        {
+            GetNullSafe<SceneHandler>().NextMobilityCourse(new InputAction.CallbackContext());
+        }
+        
+        public void BtnNextVSTarget()
+        {
+            GetNullSafe<SceneHandler>().NextVisualSearchTarget(new InputAction.CallbackContext());
         }
         
         public void BtnCycleGaze()
