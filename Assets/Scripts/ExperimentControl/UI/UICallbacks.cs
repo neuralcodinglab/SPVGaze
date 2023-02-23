@@ -24,12 +24,23 @@ namespace ExperimentControl.UI
 
         public Button btnResetState;
         public Button btnStartExperiment;
+        public Button btnEndCurrentTrial;
         public Button btnNextBlockObj;
+        public Button btnNextTrial;
+        public Button forwardNavBtn;
+        public Button backwardNavBtn;
 
+        [Header("Scene recognition response")] 
+        public Button btnReportLiving;
+        public Button btnReportBedroom;
+        public Button btnReportKitchen;
+        public Button btnReportBathroom;
+        
         [Header("Monitoring")] 
         public TMP_Text eyeTrackingFreqTxt;
         public TMP_Text blockVal;
         public TMP_Text trialVal;
+        public TMP_Text nextTrialVal;
         public TMP_Text conditionVal;
         public TMP_Text hallwayVal;
         public TMP_Text inZoneTxt;
@@ -40,6 +51,8 @@ namespace ExperimentControl.UI
         public TMP_Text tasksRemaining;
         public TMP_Text maxRecordsRemaining;
         public TMP_Text openStreamsRemaining;
+        
+        public Environment.RoomCategory SceneRecognitionResponse {get; set;}
 
         private static T GetNullSafe<T>()
         {
@@ -55,6 +68,8 @@ namespace ExperimentControl.UI
 
         private void Start()
         {
+            DeactivateSceneResponseBtns();
+            DeactivateNextTrialButton();
             var options = Enum.GetNames(typeof(Glasses)).Select(x => new TMP_Dropdown.OptionData(x));
             glassesDropdown.options = new List<TMP_Dropdown.OptionData>(options);
             glassesDropdown.value = 0;
@@ -63,6 +78,15 @@ namespace ExperimentControl.UI
             {
                 btnNextBlockObj.interactable = true;
             });
+            
+            // End trial / Next Trial / navigation buttons
+            RunExperiment.Instance.trialCompleted.AddListener(ActivateNavigationBtns);
+            RunExperiment.Instance.trialCompleted.AddListener(ActivateNextTrialButton);
+            RunExperiment.Instance.trialCompleted.AddListener(DeactivateEndTrialButton);
+            RunExperiment.Instance.resumedRecording.AddListener(ActivateEndTrialButton);
+            DeactivateEndTrialButton();
+            DeactivateNavigationBtns();
+
             StaticDataReport.OnChangeInZone.AddListener(val => inZoneTxt.text = val.ToString("D3"));
             StaticDataReport.OnChangeCollisionCount.AddListener(val => collisionCountTxt.text = val.ToString("D3"));
             SenorSummarySingletons.GetInstance<PhospheneSimulator>()
@@ -169,10 +193,11 @@ namespace ExperimentControl.UI
 
         public void BtnToggleSimulator()
         {
-            GetNullSafe<PhospheneSimulator>().TogglePhospheneSim();
+            // GetNullSafe<PhospheneSimulator>().TogglePhospheneSim();
+            GetNullSafe<PhospheneSimulator>().ToggleSimulationActive(EyeTracking.EyeTrackingConditions.GazeIgnored);
         }
 
-        
+
         public void BtnToggleEdgeDetection()
         {
             GetNullSafe<PhospheneSimulator>().ToggleEdgeDetection(new InputAction.CallbackContext());
@@ -180,16 +205,20 @@ namespace ExperimentControl.UI
         
         public void BtnNextLocation()
         {
-            GetNullSafe<SceneHandler>().NextHouseLocation(new InputAction.CallbackContext());
+            GetNullSafe<SceneHandler>().NextEnvironment(new InputAction.CallbackContext());
         }
-        public void BtnNextRoom()
+        
+        public void DeactivateNextTrialButton() => btnNextTrial.interactable = false;
+        public void ActivateNextTrialButton() => btnNextTrial.interactable = true;
+        public void BtnNextTrial()
         {
-            GetNullSafe<SceneHandler>().NextMobilityCourse(new InputAction.CallbackContext());
+            RunExperiment.Instance.NextTrial(new InputAction.CallbackContext());
+            DeactivateNextTrialButton();
         }
         
         public void BtnNextVSTarget()
         {
-            GetNullSafe<SceneHandler>().NextVisualSearchTarget(new InputAction.CallbackContext());
+            GetNullSafe<SceneHandler>().NextTargetObject(new InputAction.CallbackContext());
         }
         
         public void BtnCycleGaze()
@@ -236,11 +265,83 @@ namespace ExperimentControl.UI
         {
             SenorSummarySingletons.GetInstance<InputHandler>().ResetCamera2OriginAlignment();
         }
+
+        public void ActivateSceneResponseBtns()
+        {
+            btnReportLiving.interactable = true;
+            btnReportBedroom.interactable = true;
+            btnReportKitchen.interactable = true;
+            btnReportBathroom.interactable = true;
+        }
         
+        public void DeactivateSceneResponseBtns()
+        {
+            btnReportLiving.interactable = false;
+            btnReportBedroom.interactable = false;
+            btnReportKitchen.interactable = false;
+            btnReportBathroom.interactable = false;
+        }
+        public void BtnReportKitchen()
+        {
+            SceneRecognitionResponse = Environment.RoomCategory.Kitchen;
+        }
+        
+        public void BtnReportLiving()
+        {
+            SceneRecognitionResponse = Environment.RoomCategory.Living;
+        }
+        public void BtnReportBathroom()
+        {
+            SceneRecognitionResponse = Environment.RoomCategory.Bathroom;
+        }
+        
+        public void BtnReportBedroom()
+        {
+            SceneRecognitionResponse = Environment.RoomCategory.Bedroom;
+        }
+
+        public void BtnEndCurrentTrial()
+        {
+            RunExperiment.Instance.ManuallyEndTrial();
+        }
+
+        public void DeactivateEndTrialButton() => btnEndCurrentTrial.interactable = false;
+        public void ActivateEndTrialButton() => btnEndCurrentTrial.interactable = true;
 
         private void ReturnFromCalibration()
         {
             Debug.Log("The Calibration returned!");
         }
+
+        public void SetNextTrialValue(string nextTrialDescription)
+        {
+            nextTrialVal.text = nextTrialDescription;
+        }
+
+        public void ActivateNavigationBtns()
+        {
+            forwardNavBtn.interactable = true;
+            backwardNavBtn.interactable = true;
+        }
+
+        public void DeactivateNavigationBtns()
+        {
+            forwardNavBtn.interactable = false;
+            backwardNavBtn.interactable = false;
+        }
+
+        public void NavigateNextTrial()
+        {
+            conditionVal.text = "--";
+            nextTrialVal.text = "--"; 
+            RunExperiment.Instance.NavigateNextTrial();
+        }
+        public void NavigatePreviousTrial()
+        { 
+            conditionVal.text = "--";
+            nextTrialVal.text = "--"; 
+            RunExperiment.Instance.NavigatePreviousTrial();
+        } 
+
     }
 }

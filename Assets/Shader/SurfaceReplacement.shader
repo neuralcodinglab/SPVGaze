@@ -31,34 +31,34 @@ float4 Output(float depth01, float3 normal)
 {
 	/*{
 		None = 0,
-		ObjectId 			= 1,
-		CatergoryId			= 2,
-		DepthCompressed		= 3,
-		DepthMultichannel	= 4,
-		Normals				= 5
+		ObjectId 			= 2,
+		CatergoryId			= 3,
+		DepthCompressed		= 4,
+		DepthMultichannel	= 5,
+		Normals				= 1
 	};*/
 
-	if (_OutputMode == 1) // ObjectId
+	if (_OutputMode == 2) // ObjectId
 	{
 		return _ObjectColor;
 	}
-	else if (_OutputMode == 2) // CatergoryId
+	else if (_OutputMode == 3) // CatergoryId
 	{
 		return _CategoryColor;
 	}
-	else if (_OutputMode == 3) // DepthCompressed
+	else if (_OutputMode == 4) // DepthCompressed
 	{
 		float linearZFromNear = Linear01FromEyeToLinear01FromNear(depth01);
 		float k = 0.25; // compression factor
 		return pow(linearZFromNear, k);
 	}
-	else if (_OutputMode == 4) // DepthMultichannel
+	else if (_OutputMode == 5) // DepthMultichannel
 	{
 		float lowBits = frac(depth01 * 256);
 		float highBits = depth01 - lowBits / 256;
 		return float4(lowBits, highBits, depth01, 1);
 	}
-	else if (_OutputMode == 5) // Normals
+	else if (_OutputMode == 1) // Normals
 	{
 		// [-1 .. 1] => [0 .. 1]
 		float3 c = normal * 0.5 + 0.5;

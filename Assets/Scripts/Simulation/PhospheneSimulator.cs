@@ -320,7 +320,8 @@ namespace Simulation
         public void NextEyeTrackingCondition(InputAction.CallbackContext ctx) => NextEyeTrackingCondition();
         private void NextEyeTrackingCondition()
         {
-          SetGazeTrackingCondition((EyeTracking.EyeTrackingConditions)((int)(EyeTrackingCondition + 1) % nEyeTrackingModes));
+          // SetGazeTrackingCondition((EyeTracking.EyeTrackingConditions)((int)(EyeTrackingCondition + 1) % nEyeTrackingModes));
+          SetGazeTrackingCondition((EyeTracking.EyeTrackingConditions)((int)(EyeTrackingCondition + 2) % nEyeTrackingModes)); // JR: reversed order for easier explanation.
         }
         
         public void SetGazeTrackingCondition(EyeTracking.EyeTrackingConditions condition)
@@ -424,23 +425,43 @@ namespace Simulation
           }
         }
 
-        public void StartTrial(EyeTracking.EyeTrackingConditions condition)
+        // Public methods for activating/deactivating the full simulation (img processing + phosphene simulation)
+        
+        private bool _simulationActive;
+
+        public void ActivateSimulation() => ActivateSimulation(gazeCondition);
+        public void ActivateSimulation(EyeTracking.EyeTrackingConditions condition)
         {
-          boxChecker.gameObject.SetActive(true);
-          checkpointChecker.gameObject.SetActive(true);
-          
+          _simulationActive = true;
+          // boxChecker.gameObject.SetActive(true);
+          // checkpointChecker.gameObject.SetActive(true);
+          //
           SetEdgeDetection(true);
           SetPhospheneSim(true);
           SetGazeTrackingCondition(condition);
+          SurfaceReplacement.ActivateReplacementShader(targetCamera, SurfaceReplacement.ReplacementModes.Normals);
         }
 
-        public void StopTrial()
+        public void DeactivateSimulation()
         {
-          boxChecker.gameObject.SetActive(false);
-          checkpointChecker.gameObject.SetActive(false);
-          
+          _simulationActive = false;
+          // boxChecker.gameObject.SetActive(false);
+          // checkpointChecker.gameObject.SetActive(false);
+          //
+          SurfaceReplacement.DeactivateReplacementShader(targetCamera);
           SetEdgeDetection(false);
           SetPhospheneSim(false);
         }
+
+        public void ToggleSimulationActive() => ToggleSimulationActive(gazeCondition);
+        public void ToggleSimulationActive(EyeTracking.EyeTrackingConditions condition)
+        {
+          if (_simulationActive)
+            DeactivateSimulation();
+          else
+            ActivateSimulation(condition);
+        }
+        
+        
     }
 }

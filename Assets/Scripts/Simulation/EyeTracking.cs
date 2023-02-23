@@ -285,7 +285,7 @@ private static int errorInUpdate = 0;
             // update class variable
             _eyeData = eyeDataRef;
             
-            if (RunExperiment.Instance.betweenTrials) return;
+            if (RunExperiment.Instance.recordingPaused) return;
             /************************************
              * Record Data
              ************************************/
