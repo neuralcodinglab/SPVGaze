@@ -221,23 +221,17 @@ namespace ExperimentControl
 
         public void ResetCamera2OriginAlignment()
         {
-            var headPosition = SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.position;
-            var originPosition = xrOrigin.transform.position;
-            var correction = originPosition-headPosition;
-            correction.y = 0f;
-            cameraOffset.transform.position = correction;
+            var headRotation = SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.localRotation;
+            var rotationCorrection = Quaternion.Inverse(headRotation).eulerAngles;
+            cameraOffset.transform.localRotation = Quaternion.Euler(new Vector3(0, rotationCorrection.y, 0));
             
-            var headRotationY =SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.rotation.y;
-            var originRotationY = xrOrigin.transform.rotation.y;
-            var rotationCorrectionY = originRotationY - headRotationY;
-            cameraOffset.transform.Rotate(Vector3.up, rotationCorrectionY);
+            var headPos = SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.position;
+            var originPos = xrOrigin.transform.position;
+            var offsetPos = cameraOffset.transform.position;
 
-
-            // var originTransform = xrOrigin.transform;
-            // var y = originTransform.position.y;
-            // var pos = new Vector3(head.x, y, head.z);
-            // originTransform.position = pos;
-            // SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.position = head;
+            var posCorrection = offsetPos - headPos + originPos;
+            posCorrection.y = originPos.y;
+            offsetPos = posCorrection;
         }
 
         private void Update()

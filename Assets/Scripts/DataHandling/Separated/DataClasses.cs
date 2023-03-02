@@ -22,12 +22,17 @@ namespace DataHandling.Separated
     
     public struct TrialConfigRecord : IDataStructure
     {
+        public RunExperiment.Task ExperimentalTask;
         public EyeTracking.EyeTrackingConditions GazeCondition { get; set; }
-        public String EnvironmentName { get; set; }
+        public string EnvironmentName { get; set; }
         public Environment.RoomCategory EnvironmentClass { get; set; }
         public Glasses Glasses { get; set; }
         public double GazeRaySensitivity { get; set; }
         public string DataDelimiter { get; set; }
+        public Environment.RoomCategory ReportedRoomCategory { get; set; }
+        public int ReportedSubjectiveRating { get; set; }
+        public int ReportedEventsCount { get; set; }
+        public float TrialDuration { get; set; }
     }
 
     public struct EngineDataRecord : IDataStructure
@@ -52,7 +57,6 @@ namespace DataHandling.Separated
         public int FrameCount { get; set; }
         
         public int ReportedEventsCount { get; set; }
-        public Environment.RoomCategory ReportedRoomCategory { get; set; }
     }
 
     public struct EyeTrackerDataRecord : IDataStructure

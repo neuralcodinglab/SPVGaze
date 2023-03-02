@@ -11,48 +11,68 @@ using TMPro;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.XR.Interaction.Toolkit;
 using ViveSR.anipal.Eye;
 
 namespace ExperimentControl.UI
 {
     public class UICallbacks : MonoBehaviour
     {
-        [Header("Management")]
+        [Header("Setup")]
         public TMP_InputField subjID;
         public TMP_Dropdown glassesDropdown;
-
-        public Button btnResetState;
+        public Button btnCalibrate;
         public Button btnStartExperiment;
+
+        [Header("Simulation Management")]
+        public Button btnDeactivateSimulation;
+        public Button btnActivateImageProcessing;
+        public Button btnActivateFullSimulation;
+        public Button btnNextPracticeEnvironment;
+        public Button btnToggleFixationDot;
+        public Button btnCycleGaze;
+
+        [Header("Trial Navigation")]
         public Button btnEndCurrentTrial;
-        public Button btnNextBlockObj;
-        public Button btnNextTrial;
+        public Button btnBeginCurrentTrial;
         public Button forwardNavBtn;
         public Button backwardNavBtn;
 
-        [Header("Scene recognition response")] 
+        [Header("User response")] 
         public Button btnReportLiving;
         public Button btnReportBedroom;
         public Button btnReportKitchen;
         public Button btnReportBathroom;
-        
+        public Slider sliderSubjRating;
+        public TMP_Text sliderValue;
+        public Button btnSubmitSubjRating;
+
+        [Header("Hidden buttons")] 
+        public Button btnShowHiddenButtons;
+        public Button btnCycleAllEnvs;
+        public Button btnCycleSurfaceReplacement;
+        public Button btnToggleEdgeDetection;
+        public Button btnResetAlignment;
+        public Button btnCycleTargets;
+
         [Header("Monitoring")] 
         public TMP_Text eyeTrackingFreqTxt;
         public TMP_Text blockVal;
         public TMP_Text trialVal;
-        public TMP_Text nextTrialVal;
         public TMP_Text conditionVal;
-        public TMP_Text hallwayVal;
-        public TMP_Text inZoneTxt;
-        public TMP_Text collisionCountTxt;
+        public TMP_Text taskVal;
+        public TMP_Text environmentVal;
+        public TMP_Text nextConditionVal;
+        public TMP_Text nextTaskVal;
+        public TMP_Text nextEnvironmentVal;
         
         [Header("Post Experiment")]
         public GameObject postExperimentMonitoring;
         public TMP_Text tasksRemaining;
         public TMP_Text maxRecordsRemaining;
         public TMP_Text openStreamsRemaining;
-        
-        public Environment.RoomCategory SceneRecognitionResponse {get; set;}
 
         private static T GetNullSafe<T>()
         {
@@ -69,30 +89,34 @@ namespace ExperimentControl.UI
         private void Start()
         {
             DeactivateSceneResponseBtns();
-            DeactivateNextTrialButton();
+            DeactivateSubjectiveRatingSlider();
+            DeactivateBeginTrialButton();
+            DeactivateHiddenButtons();
+            DeactivateSimulationControlBtns();
             var options = Enum.GetNames(typeof(Glasses)).Select(x => new TMP_Dropdown.OptionData(x));
             glassesDropdown.options = new List<TMP_Dropdown.OptionData>(options);
             glassesDropdown.value = 0;
             
-            RunExperiment.Instance.blockCompleted.AddListener(() =>
-            {
-                btnNextBlockObj.interactable = true;
-            });
-            
             // End trial / Next Trial / navigation buttons
-            RunExperiment.Instance.trialCompleted.AddListener(ActivateNavigationBtns);
-            RunExperiment.Instance.trialCompleted.AddListener(ActivateNextTrialButton);
-            RunExperiment.Instance.trialCompleted.AddListener(DeactivateEndTrialButton);
-            RunExperiment.Instance.resumedRecording.AddListener(ActivateEndTrialButton);
             DeactivateEndTrialButton();
             DeactivateNavigationBtns();
+            RunExperiment.Instance.trialInitiated.AddListener(DeactivateBeginTrialButton); 
+            RunExperiment.Instance.trialInitiated.AddListener(DeactivateNavigationBtns);
+            RunExperiment.Instance.trialInitiated.AddListener(DeactivateHiddenButtons);
+            RunExperiment.Instance.resumedRecording.AddListener(ActivateEndTrialButton);
+            RunExperiment.Instance.trialCompleted.AddListener(ActivateNavigationBtns);
+            RunExperiment.Instance.trialCompleted.AddListener(ActivateBeginTrialButton);
+            RunExperiment.Instance.trialCompleted.AddListener(DeactivateEndTrialButton);
+            RunExperiment.Instance.trialCompleted.AddListener(DeactivateSimulationControlBtns);
+            SenorSummarySingletons.GetInstance<SceneHandler>().environmentChanged.AddListener( environment =>
+                environmentVal.text = environment.Name);
 
-            StaticDataReport.OnChangeInZone.AddListener(val => inZoneTxt.text = val.ToString("D3"));
-            StaticDataReport.OnChangeCollisionCount.AddListener(val => collisionCountTxt.text = val.ToString("D3"));
+            
+            
             SenorSummarySingletons.GetInstance<PhospheneSimulator>()
                 .onChangeGazeCondition.AddListener(condition => conditionVal.text = condition.ToString());
-            SenorSummarySingletons.GetInstance<InputHandler>().onChangeHallway
-                .AddListener(hallway => hallwayVal.text = hallway.Name);
+            RunExperiment.Instance.currentTrialChanged.AddListener(UpdateTrialInfo);
+
         }
 
         private void FixedUpdate()
@@ -136,16 +160,37 @@ namespace ExperimentControl.UI
             eyeTrackingFreqTxt.text = meanFreq.ToString("F3") + " Hz";
         }
 
-        public void UpdateBlockAndTrial(int block, int trial)
+        public void UpdateTrialInfo()
         {
-            blockVal.text = block.ToString("D2");
-            trialVal.text = trial.ToString("D2");
+
+            // Current Trial
+            var exp = RunExperiment.Instance;
+            var (blockIdx, totalBlockCount, trialIdx, totalTrialCount) = exp.GetCurrentIndicesAndTotalTrialCount();
+            var currentTrial = exp.CurrentTrial;
+            blockVal.text = $"{blockIdx+1:D2} / {totalBlockCount:D2}"; //blockIdx.ToString("D2");
+            trialVal.text = $"{trialIdx+1:D2} / {totalTrialCount:D2}"; // trialIdx.ToString("D2");
+            conditionVal.text = currentTrial.EyeTrackingCondition.ToString();
+            taskVal.text = currentTrial.Task.ToString();
+            environmentVal.text = currentTrial.Environment.Name;
+
+            // Next Trial
+            var nextIdx = exp.GetNextTrialIndices();
+            if (nextIdx == null)
+            {
+                nextConditionVal.text = "--";
+                nextTaskVal.text = "--";
+                nextEnvironmentVal.text = "--";
+                return;
+            }
+            var nextTrial = exp.GetNextTrial(false);
+            nextConditionVal.text = nextTrial.EyeTrackingCondition.ToString();
+            nextTaskVal.text = nextTrial.Task.ToString();
+            nextEnvironmentVal.text = nextTrial.Environment.Name.ToString();
         }
 
         private Coroutine taskChecking;
         public void PostBlock(IEnumerable<Data2File> allHandlers)
         {
-            btnNextBlockObj.interactable = false;
             postExperimentMonitoring.SetActive(true);
             
             var handlerArr = allHandlers.ToArray();
@@ -186,16 +231,19 @@ namespace ExperimentControl.UI
             SRanipal_Eye_API.LaunchEyeCalibration(Marshal.GetFunctionPointerForDelegate(new Action(ReturnFromCalibration)));
         }
 
-        public void BtnPlayground()
-        {
-            GetNullSafe<InputHandler>().MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Playground]);
-        }
-
         public void BtnToggleSimulator()
         {
             // GetNullSafe<PhospheneSimulator>().TogglePhospheneSim();
-            GetNullSafe<PhospheneSimulator>().ToggleSimulationActive(EyeTracking.EyeTrackingConditions.GazeIgnored);
         }
+
+        public void BtnActivateImageProcessing() =>
+            GetNullSafe<PhospheneSimulator>().ActivateImageProcessing();
+        
+        public void BtnActivateFullSimulation() =>
+            GetNullSafe<PhospheneSimulator>().ActivateSimulation();
+        
+        public void BtnDeactivateSimulation() =>
+            GetNullSafe<PhospheneSimulator>().DeactivateSimulation();
 
 
         public void BtnToggleEdgeDetection()
@@ -208,48 +256,45 @@ namespace ExperimentControl.UI
             GetNullSafe<SceneHandler>().NextEnvironment(new InputAction.CallbackContext());
         }
         
-        public void DeactivateNextTrialButton() => btnNextTrial.interactable = false;
-        public void ActivateNextTrialButton() => btnNextTrial.interactable = true;
-        public void BtnNextTrial()
+        public void BtnNextPracticeLocation()
         {
-            RunExperiment.Instance.NextTrial(new InputAction.CallbackContext());
-            DeactivateNextTrialButton();
+            GetNullSafe<SceneHandler>().NextPracticeEnvironment(new InputAction.CallbackContext());
         }
         
-        public void BtnNextVSTarget()
+        public void DeactivateBeginTrialButton() => btnBeginCurrentTrial.interactable = false;
+        public void ActivateBeginTrialButton() => btnBeginCurrentTrial.interactable = true;
+        public void BtnBeginCurrentTrial()
         {
-            GetNullSafe<SceneHandler>().NextTargetObject(new InputAction.CallbackContext());
+            RunExperiment.Instance.BeginTrial(new InputAction.CallbackContext());
+            DeactivateBeginTrialButton();
         }
+        
+        // public void BtnNextVSTarget()
+        // {
+        //     GetNullSafe<SceneHandler>().NextTargetObject(new InputAction.CallbackContext());
+        // }
         
         public void BtnCycleGaze()
         {
             GetNullSafe<PhospheneSimulator>().NextEyeTrackingCondition(new InputAction.CallbackContext());
         }
 
-        public void BtnSetUpExperimentBlocks()
-        {
-            btnStartExperiment.interactable = true;
-            btnResetState.interactable = false;
-            RunExperiment.Instance.EndTrial();
-        }
-
         public void BtnStartExperiment()
         {
             btnStartExperiment.interactable = false;
-            btnResetState.interactable = true;
             RunExperiment.Instance.StartExperiment(subjID.text);
         }
 
-        public void BtnRunNextBlock()
-        {
-            SRanipal_Eye_API.LaunchEyeCalibration(Marshal.GetFunctionPointerForDelegate(new Action(ReturnFromCalibration)));
-            
-            RunExperiment.Instance.StartNewBlock();
-            btnNextBlockObj.interactable = false;
-            
-            if (taskChecking != null) StopCoroutine(taskChecking);
-            postExperimentMonitoring.SetActive(false);
-        }
+        // public void BtnRunNextBlock()
+        // {
+        //     SRanipal_Eye_API.LaunchEyeCalibration(Marshal.GetFunctionPointerForDelegate(new Action(ReturnFromCalibration)));
+        //     
+        //     RunExperiment.Instance.StartNewBlock();
+        //     btnNextBlockObj.interactable = false;
+        //     
+        //     if (taskChecking != null) StopCoroutine(taskChecking);
+        //     postExperimentMonitoring.SetActive(false);
+        // }
 
         public void BtnCycleSurface()
         {
@@ -266,6 +311,41 @@ namespace ExperimentControl.UI
             SenorSummarySingletons.GetInstance<InputHandler>().ResetCamera2OriginAlignment();
         }
 
+        public int SubjectiveRatingResponse {get; set;}
+        public void PromptSubjectiveRating(string message)
+        {
+            SubjectiveRatingResponse = -1;
+            SenorSummarySingletons.GetInstance<SceneHandler>().SetWaitScreenMessage(message);
+            ActivateSubjectiveRatingSlider();
+        }
+
+        public void ActivateSubjectiveRatingSlider() => sliderSubjRating.interactable = true;
+        public void DeactivateSubjectiveRatingSlider()
+        {
+            sliderSubjRating.interactable = false;
+            btnSubmitSubjRating.interactable = false;
+            sliderValue.text = "-";
+        }
+
+        public void OnSliderRatingChanged()
+        {
+            sliderValue.text = sliderSubjRating.value.ToString();
+            btnSubmitSubjRating.interactable = true;
+        }
+        public void OnSubjectiveRatingSubmission()
+        {
+            if (sliderValue.text == "-") return;
+            SubjectiveRatingResponse = int.Parse(sliderValue.text);
+            DeactivateSubjectiveRatingSlider();
+        }
+        
+        public Environment.RoomCategory SceneRecognitionResponse {get; set;}
+        public void PromptSceneRecognitionResponse(string message)
+        {
+            SceneRecognitionResponse = Environment.RoomCategory.None;
+            ActivateSceneResponseBtns();
+            SenorSummarySingletons.GetInstance<SceneHandler>().SetWaitScreenMessage(message);
+        }
         public void ActivateSceneResponseBtns()
         {
             btnReportLiving.interactable = true;
@@ -273,7 +353,7 @@ namespace ExperimentControl.UI
             btnReportKitchen.interactable = true;
             btnReportBathroom.interactable = true;
         }
-        
+
         public void DeactivateSceneResponseBtns()
         {
             btnReportLiving.interactable = false;
@@ -284,20 +364,24 @@ namespace ExperimentControl.UI
         public void BtnReportKitchen()
         {
             SceneRecognitionResponse = Environment.RoomCategory.Kitchen;
+            DeactivateSceneResponseBtns();
         }
         
         public void BtnReportLiving()
         {
             SceneRecognitionResponse = Environment.RoomCategory.Living;
+            DeactivateSceneResponseBtns();
         }
         public void BtnReportBathroom()
         {
             SceneRecognitionResponse = Environment.RoomCategory.Bathroom;
+            DeactivateSceneResponseBtns();
         }
         
         public void BtnReportBedroom()
         {
             SceneRecognitionResponse = Environment.RoomCategory.Bedroom;
+            DeactivateSceneResponseBtns();
         }
 
         public void BtnEndCurrentTrial()
@@ -313,11 +397,11 @@ namespace ExperimentControl.UI
             Debug.Log("The Calibration returned!");
         }
 
-        public void SetNextTrialValue(string nextTrialDescription)
+        private void MeasureCalibrationAccuracy()
         {
-            nextTrialVal.text = nextTrialDescription;
+            
         }
-
+        
         public void ActivateNavigationBtns()
         {
             forwardNavBtn.interactable = true;
@@ -330,18 +414,47 @@ namespace ExperimentControl.UI
             backwardNavBtn.interactable = false;
         }
 
-        public void NavigateNextTrial()
+        public void DeactivateSimulationControlBtns()
         {
-            conditionVal.text = "--";
-            nextTrialVal.text = "--"; 
-            RunExperiment.Instance.NavigateNextTrial();
+            btnDeactivateSimulation.interactable = false;
+            btnActivateImageProcessing.interactable = false;
+            btnActivateFullSimulation.interactable = false;
+            btnNextPracticeEnvironment.interactable = false;
+            btnToggleFixationDot.interactable = false;
+            btnCycleGaze.interactable = false;
         }
-        public void NavigatePreviousTrial()
-        { 
-            conditionVal.text = "--";
-            nextTrialVal.text = "--"; 
-            RunExperiment.Instance.NavigatePreviousTrial();
-        } 
+
+        public void ActivateSimulationControlBtns()
+        {
+            btnDeactivateSimulation.interactable = true;
+            btnActivateImageProcessing.interactable = true;
+            btnActivateFullSimulation.interactable = true;
+            btnNextPracticeEnvironment.interactable = true;
+            btnToggleFixationDot.interactable = true;
+            btnCycleGaze.interactable = true;
+        }
+
+        public void NavigateNextTrial() => RunExperiment.Instance.GetNextTrial(true);
+        public void NavigatePreviousTrial() => RunExperiment.Instance.GetPreviousTrial(true);
+
+        public void ActivateHiddenButtons()
+        {
+            btnCycleAllEnvs.interactable = true;
+            btnCycleSurfaceReplacement.interactable = true;
+            btnToggleEdgeDetection.interactable = true;
+            btnResetAlignment.interactable = true;
+            btnCycleTargets.interactable = true;
+            ActivateSimulationControlBtns();
+        }
+        
+        public void DeactivateHiddenButtons()
+        {
+            btnCycleAllEnvs.interactable = false;
+            btnCycleSurfaceReplacement.interactable = false;
+            btnToggleEdgeDetection.interactable = false;
+            btnResetAlignment.interactable = false;
+            btnCycleTargets.interactable = false;
+        }
 
     }
 }

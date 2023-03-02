@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using SQLitePCL;
 using TMPro;
 using UnityEditor.VersionControl;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UIElements;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
@@ -20,8 +22,24 @@ namespace ExperimentControl
         public static SceneHandler Instance { get; private set; }
        
         private Environment[] _allEnvironments;
-        private Environment _currentEnv;
+        private Environment[] _practiceEnvironments;
+        
         private int _currentEnvIdx;
+        private Environment _currentEnv;
+        public UnityEvent<Environment> environmentChanged;
+        public Environment CurrentEnvironment
+        {
+            get { return _currentEnv; }
+            set
+            {
+                if (value == _currentEnv)
+                    return;
+
+                _currentEnv = value;
+                environmentChanged.Invoke(value);
+            }
+            
+        }
 
         // The environments 
         
@@ -36,17 +54,32 @@ namespace ExperimentControl
         [SerializeField] private GameObject XR_origin;
         [SerializeField] private GameObject waitingScreen;
         
-        public Environment[] GetEnvironments()
-        {
-            return GetComponentsInChildren<Environment>(true);
+        public Environment[] GetAllEnvironments() => GetComponentsInChildren<Environment>(true);
+        public Environment[] GetPracticeEnvironments()
+        {        
+            var allEnvs = GetAllEnvironments().ToList();
+            return allEnvs.Where(value => value.practiceEnv).ToArray();
+        }
+        public Environment[] GetExperimentEnvironments()
+        {        
+            var allEnvs = GetAllEnvironments().ToList();
+            return allEnvs.Where(value => value.practiceEnv == false).ToArray();
         }
 
         public void NextEnvironment(InputAction.CallbackContext ctx) => NextEnvironment();
-        public void NextEnvironment()
+        private void NextEnvironment()
         {
             // Cycle through house locations
             _currentEnvIdx = (_currentEnvIdx + 1) % _allEnvironments.Length;
             JumpToEnvironment(_allEnvironments[_currentEnvIdx]);
+        }
+        
+        public void NextPracticeEnvironment(InputAction.CallbackContext ctx) => NextPracticeEnvironment();
+        private void NextPracticeEnvironment()
+        {
+            // Cycle through house locations
+            _currentEnvIdx = (_currentEnvIdx + 1) % _practiceEnvironments.Length;
+            JumpToEnvironment(_practiceEnvironments[_currentEnvIdx]);
         }
 
         public void RandomTargetObject(InputAction.CallbackContext ctx) => RandomTargetObject();
@@ -63,12 +96,12 @@ namespace ExperimentControl
         {
             // Cycle through target objects in current env
             _currentTargetIdx = (_currentTargetIdx + 1) % _currentEnv.targetObjects.Length;
-            ActivateTargetObject(_currentEnv.targetObjects[_currentTargetIdx]);
+            ActivateTargetObject(CurrentEnvironment.targetObjects[_currentTargetIdx]);
         }
 
         public void ActivateAllDefaultTargets()
         {
-            foreach (var trg in _currentEnv.targetObjects)
+            foreach (var trg in CurrentEnvironment.targetObjects)
             {
                 if (trg.defaultActive)
                     trg.Activate();
@@ -93,18 +126,18 @@ namespace ExperimentControl
         public void JumpToWaitingScreen()
         {
             Debug.Log("Jumping to waiting screen....");
-            Debug.Log(_currentEnv);
-            if (_currentEnv != null)
-                _currentEnv.DeactivateScene();
+            Debug.Log(CurrentEnvironment);
+            if (CurrentEnvironment != null)
+                CurrentEnvironment.DeactivateScene();
             SetWaitScreenMessage("Please wait");
             waitingScreen.SetActive(true);
             XR_origin.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
         }
         // public void DeactivateWaitingScreen()
         // {
-        //     XR_origin.transform.position = _currentEnv.playerStartLocation.transform.position;
+        //     XR_origin.transform.position = CurrentEnvironment.playerStartLocation.transform.position;
         //     waitingScreen.SetActive(false);
-        //     _currentEnv.ActivateScene();
+        //     CurrentEnvironment.ActivateScene();
         // }
 
         public void SetWaitScreenMessage(string message)
@@ -118,25 +151,25 @@ namespace ExperimentControl
         public void JumpToEnvironment(Environment newEnv)
         {
             // // If the new room is in a different 3D scene model, then deactivate the old 3D scene. 
-            // if (_currentEnv != null)
-            //     if(newEnv.GetComponent<Environment>().scene != _currentEnv.GetComponent<Environment>().scene)
-            //         _currentEnv.DeactivateScene();
+            // if (CurrentEnvironment != null)
+            //     if(newEnv.GetComponent<Environment>().scene != CurrentEnvironment.GetComponent<Environment>().scene)
+            //         CurrentEnvironment.DeactivateScene();
 
             DeactivateAll();
 
             // Update the current env with the new env and activate the new 3D scene model
-            if (_currentEnv != newEnv)
+            if (CurrentEnvironment != newEnv)
             {
                 _currentTargetIdx = -1; // Reset the index
-                _currentEnv = newEnv;
+                CurrentEnvironment = newEnv;
             }
 
-            _currentEnv.ActivateScene();
+            CurrentEnvironment.ActivateScene();
             
             // Put the XR_origin at the new location
-            XR_origin.transform.SetPositionAndRotation(_currentEnv.playerStartLocation.transform.position, 
-                                                       _currentEnv.playerStartLocation.transform.rotation);
-            Debug.Log(String.Format( "New location: {0} (category: {1})", _currentEnv, _currentEnv.roomCategory));
+            XR_origin.transform.SetPositionAndRotation(CurrentEnvironment.playerStartLocation.transform.position, 
+                                                       CurrentEnvironment.playerStartLocation.transform.rotation);
+            Debug.Log(String.Format( "New location: {0} (category: {1})", CurrentEnvironment, CurrentEnvironment.roomCategory));
         }
 
         public void ActivateTargetObject(TargetObject newTargetObject)
@@ -151,8 +184,9 @@ namespace ExperimentControl
             if (Instance != null)
                 throw new InvalidOperationException("Can only have 1 'SceneHandler' class active");
             Instance = this;
-
-            _allEnvironments = GetEnvironments();
+            environmentChanged = new UnityEvent<Environment>();
+            _allEnvironments = GetAllEnvironments();
+            _practiceEnvironments = GetPracticeEnvironments();
             SenorSummarySingletons.RegisterType(this);
         }
 

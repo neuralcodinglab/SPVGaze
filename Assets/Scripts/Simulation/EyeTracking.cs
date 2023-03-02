@@ -42,6 +42,20 @@ namespace Simulation
             GazeIgnored = 0, SimulationFixedToGaze = 1, GazeAssistedSampling = 2
         }
         
+        public static string ConditionSymbol(EyeTrackingConditions condition)
+        {
+            switch (condition)
+            {
+                case EyeTracking.EyeTrackingConditions.GazeIgnored:
+                    return "❌";
+                case EyeTracking.EyeTrackingConditions.SimulationFixedToGaze:
+                    return "🔒";
+                case EyeTracking.EyeTrackingConditions.GazeAssistedSampling:
+                    return "👁";
+            }
+            return "";
+        }
+        
 #region Unity Event Functions
 
         private void Awake()

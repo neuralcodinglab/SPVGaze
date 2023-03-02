@@ -462,6 +462,14 @@ namespace Simulation
             ActivateSimulation(condition);
         }
         
+        public void ActivateImageProcessing()
+        {
+          SurfaceReplacement.ActivateReplacementShader(targetCamera, SurfaceReplacement.ReplacementModes.Normals);
+          SetEdgeDetection(true);
+          SetPhospheneSim(false);
+        }
+        
+        
         
     }
 }
