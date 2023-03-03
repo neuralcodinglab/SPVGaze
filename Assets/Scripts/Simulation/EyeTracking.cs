@@ -37,6 +37,17 @@ namespace Simulation
         public double GazeRaySensitivity => _eyeParameter.gaze_ray_parameter.sensitive_factor;
         internal bool EyeTrackingAvailable { get; private set; }
 
+        // For custom adjustment of the fixation point simulation (e.g. during replay from collected data)
+        private Vector3 _customFixationPoint;
+        private int _customTimestamp;
+        private bool _useCustomFixationPoint;
+        public void SetCustomFixationPoint(Vector3 fixationPoint, int timestamp)
+        {
+            _customTimestamp = timestamp;
+            _customFixationPoint = fixationPoint;
+            _useCustomFixationPoint = true;
+        }
+
         public enum EyeTrackingConditions
         {
             GazeIgnored = 0, SimulationFixedToGaze = 1, GazeAssistedSampling = 2
@@ -95,6 +106,12 @@ namespace Simulation
 
         private void Update()
         {
+            if (_useCustomFixationPoint)
+            {
+                CalculateScreenEyePosition(_customFixationPoint,_customTimestamp);
+                return;
+            }
+            
             if (!EyeTrackingAvailable)
             {
                 SetEyePositionToCenter();
@@ -183,24 +200,29 @@ namespace Simulation
             {
                 Vector3 direction = eyeData.gaze_direction_normalized;
                 direction.x *= -1;
-
-                Ray rayGlobal = new Ray(sim.targetCamera.transform.position,
-                    sim.targetCamera.transform.TransformDirection(direction));
-                RaycastHit hit;
-                valid = sphereCastRadius == 0 ? 
-                    Physics.Raycast(rayGlobal, out hit, sphereCastDistance, hallwayLayerMask) :
-                    Physics.SphereCast(rayGlobal, sphereCastRadius, out hit, sphereCastDistance, hallwayLayerMask);
-                focusInfo = new FocusInfo
-                {
-                    point = hit.point,
-                    normal = hit.normal,
-                    distance = hit.distance,
-                    collider = hit.collider,
-                    rigidbody = hit.rigidbody,
-                    transform = hit.transform
-                };
+                valid = GetFocusInfoFromRayCast(direction, out focusInfo);
             }
 
+            return valid;
+        }
+
+        public bool GetFocusInfoFromRayCast(Vector3 direction,  out FocusInfo focusInfo)
+        {
+            Ray rayGlobal = new Ray(sim.targetCamera.transform.position,
+                sim.targetCamera.transform.TransformDirection(direction));
+            RaycastHit hit;
+            var valid = sphereCastRadius == 0 ? 
+                Physics.Raycast(rayGlobal, out hit, sphereCastDistance, hallwayLayerMask) :
+                Physics.SphereCast(rayGlobal, sphereCastRadius, out hit, sphereCastDistance, hallwayLayerMask);
+            focusInfo = new FocusInfo
+            {
+                point = hit.point,
+                normal = hit.normal,
+                distance = hit.distance,
+                collider = hit.collider,
+                rigidbody = hit.rigidbody,
+                transform = hit.transform
+            };
             return valid;
         }
         

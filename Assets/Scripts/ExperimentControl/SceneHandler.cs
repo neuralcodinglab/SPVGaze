@@ -52,7 +52,11 @@ namespace ExperimentControl
         // The player and scene GameObjects 
         [Header("XR origin (Player location)")]
         [SerializeField] private GameObject XR_origin;
+        
+        [Header("Waiting screen and calibration testing screen")]
         [SerializeField] private GameObject waitingScreen;
+
+        [SerializeField] private Environment calibrationTestScreen;
         
         public Environment[] GetAllEnvironments() => GetComponentsInChildren<Environment>(true);
         public Environment[] GetPracticeEnvironments()
@@ -85,8 +89,8 @@ namespace ExperimentControl
         public void RandomTargetObject(InputAction.CallbackContext ctx) => RandomTargetObject();
         public void RandomTargetObject()
         {
-            _currentTargetIdx = Random.Range(0, _currentEnv.targetObjects.Length);
-            var target = _currentEnv.targetObjects[_currentTargetIdx];
+            _currentTargetIdx = Random.Range(0, CurrentEnvironment.targetObjects.Length);
+            var target = CurrentEnvironment.targetObjects[_currentTargetIdx];
             ActivateTargetObject(target);
             target.PlayClip();
         }
@@ -95,7 +99,7 @@ namespace ExperimentControl
         public void NextTargetObject()
         {
             // Cycle through target objects in current env
-            _currentTargetIdx = (_currentTargetIdx + 1) % _currentEnv.targetObjects.Length;
+            _currentTargetIdx = (_currentTargetIdx + 1) % CurrentEnvironment.targetObjects.Length;
             ActivateTargetObject(CurrentEnvironment.targetObjects[_currentTargetIdx]);
         }
 
@@ -171,6 +175,8 @@ namespace ExperimentControl
                                                        CurrentEnvironment.playerStartLocation.transform.rotation);
             Debug.Log(String.Format( "New location: {0} (category: {1})", CurrentEnvironment, CurrentEnvironment.roomCategory));
         }
+
+        public void JumpToCalibrationTestScreen() => JumpToEnvironment(calibrationTestScreen);
 
         public void ActivateTargetObject(TargetObject newTargetObject)
         {

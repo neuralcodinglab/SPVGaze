@@ -8,6 +8,7 @@ using DataHandling.Separated;
 using MathNet.Numerics.Statistics;
 using Simulation;
 using TMPro;
+using Unity.VisualScripting;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -392,14 +393,10 @@ namespace ExperimentControl.UI
         public void DeactivateEndTrialButton() => btnEndCurrentTrial.interactable = false;
         public void ActivateEndTrialButton() => btnEndCurrentTrial.interactable = true;
 
-        private void ReturnFromCalibration()
+        public void ReturnFromCalibration()
         {
             Debug.Log("The Calibration returned!");
-        }
-
-        private void MeasureCalibrationAccuracy()
-        {
-            
+            RunExperiment.Instance.RunCalibrationTest();
         }
         
         public void ActivateNavigationBtns()

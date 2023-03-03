@@ -654,5 +654,44 @@ namespace ExperimentControl
             // StartNewBlock();
         }
 
+
+        public void RunCalibrationTest()
+        {
+            StartCoroutine(CalibrationPerformanceTrial());
+        }
+
+        private IEnumerator  CalibrationPerformanceTrial()
+        {
+            
+            // Initiate trial
+            trialInitiated.Invoke(); // Deactivates the UI buttons
+            
+            // Create filestream for the calibrationTest results
+            var eyeHandlers = new List<Data2File> {EyeTrackerDataHandler, SingleEyeDataHandlerL,
+                                                    SingleEyeDataHandlerR, SingleEyeDataHandlerC};
+            foreach(var h in eyeHandlers) h.NewTrial(_currBlockIdx, _currTrialIdx, calibrationTest:true);
+
+            // Jump to the calibration screen
+            var sceneHandler = SenorSummarySingletons.GetInstance<SceneHandler>();
+            sceneHandler.JumpToCalibrationTestScreen();
+            var nDots = sceneHandler.CurrentEnvironment.targetObjects.Length;
+            Debug.Log($"nDots {nDots}");
+            
+            // And Go
+            recordingPaused = false;
+            for (var i = 0; i < nDots; i++)
+            {
+                sceneHandler.NextTargetObject();
+                yield return new WaitForSeconds(1.5f);
+            }
+            
+            // Conclude the trial
+            recordingPaused = true;
+            trialCompleted.Invoke(); //Activates the GUI buttons
+            foreach(var h in eyeHandlers) h.StopTrial();
+            sceneHandler.JumpToWaitingScreen();
+        }
+        
+
     }
 }
