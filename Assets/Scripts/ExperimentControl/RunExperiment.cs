@@ -127,8 +127,16 @@ namespace ExperimentControl
         }
         private void FixedUpdate()
         {
-            if (recordingPaused) return;
+            var trgCollider = string.Empty; 
+            if (_reportingTarget)
+            {
+                _pointingTargetEye = GetPointingTarget(xrHead.transform, fromEyeTracker: true);
+                _pointingTargetHead = GetPointingTarget(xrHead.transform, fromEyeTracker: false);
+                _pointingTargetHand = GetPointingTarget(handRight.transform, fromEyeTracker: false);
+                if (_pointingTargetHand.collider is not null) trgCollider = _pointingTargetHand.collider.gameObject.name;
+            }
 
+            if (recordingPaused) return;
             var record = new EngineDataRecord(); 
             record.TimeStamp = DateTime.Now.Ticks;
             record.XROriginPos = xrOrigin.transform.position;
@@ -142,10 +150,16 @@ namespace ExperimentControl
             record.CollisionCount = StaticDataReport.CollisionCount;
             record.FrameCount = Time.frameCount;
             record.ReportedEventsCount = _reportedEventsCount;
+            record.ActiveTarget = CurrentTrial.Environment.ActiveTargetName;
+            record.PointLocationEye = _reportingTarget? _pointingTargetEye.point : Vector3.zero;
+            record.PointLocationHand = _reportingTarget? _pointingTargetHand.point : Vector3.zero;
+            record.PointLocationHead = _reportingTarget? _pointingTargetHead.point : Vector3.zero ;
+            record.TargetHit = trgCollider;
             RecordDataEntry(record);
+            
         }
         
-        
+       
         
         
         /// The experiment trial configuration
@@ -220,7 +234,7 @@ namespace ExperimentControl
                 
                 // Practice the tasks with condition 3 (2.5 minutes)
                 new Trial(Task.VisualSearch, cond3, practiceEnvs[0], 90),
-                new Trial(Task.SceneRecognition, cond2, practiceEnvs[3], 60),
+                new Trial(Task.SceneRecognition, cond3, practiceEnvs[3], 60),
                 
                 // Final free practice round (2,5 minutes)
                 new Trial(Task.FreePractice, cond1, practiceEnvs[0], 150),
@@ -276,7 +290,7 @@ namespace ExperimentControl
             var practiceSession = new List<List<Trial>>() {practiceBlock};
             var sceneRecSession1 = GetSceneRecognitionSession(3);
             var sceneRecSession2 = GetSceneRecognitionSession(3);
-            var visSearchSession = GetVisualSearchSession(2);
+            var visSearchSession = GetVisualSearchSession(3);
 
 
             return practiceSession
@@ -294,14 +308,24 @@ namespace ExperimentControl
 
             // create folders and files
             var subjectDir = Path.Join(Application.persistentDataPath, subjId);
-            // var subjectDir = Path.Join(dataSaveDirectory, subjId);
-            if (Directory.Exists(subjectDir))
+
+            // If already exists, don't overwrite or merge, but create new folder (trailing _ appended)
+            while (Directory.Exists(subjectDir))
             {
-                var tmp = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
-                Debug.LogWarning($"Subject Directory for {subjId} exists. Replacing with {tmp}");
-                subjId = tmp;
+                Debug.Log($"Already exists: {subjectDir}");
+                subjectDir = $"{subjectDir}_";
+                subjId = $"{subjId}_";
                 SenorSummarySingletons.GetInstance<UICallbacks>().subjID.text = subjId;
             }
+            
+            // if (Directory.Exists(subjectDir))
+            // {
+            //     var tmp = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
+            //     Debug.LogWarning($"Subject Directory for {subjId} exists. Replacing with {tmp}");
+            //     subjId = tmp;
+            //     SenorSummarySingletons.GetInstance<UICallbacks>().subjID.text = subjId;
+            // }
+            
             foreach(var h in allHandlers) h.NewSubject(subjId);
 
             // Register events
@@ -435,7 +459,7 @@ namespace ExperimentControl
         private void OnTrialStart()
         {
             startEndClip.Play();
-            StartCoroutine(EndTrialAfterTimeLimit());
+            _endTrialAfterTimeLimit = StartCoroutine(EndTrialAfterTimeLimit());
             switch (CurrentTrial.Task)
             {
                 case Task.FreePractice:
@@ -444,14 +468,15 @@ namespace ExperimentControl
                     SenorSummarySingletons.GetInstance<PhospheneSimulator>().DeactivateSimulation();
                     break;
                 case Task.VisualSearch:
-                    SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
+                    SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject();
+                    // SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
                     break;
             }
             _trialDuration = -1f;
             _trialStartTime = Time.time;
             _participantTriggerEnabled = true;
         }
-
+        private Coroutine _endTrialAfterTimeLimit; 
         private IEnumerator EndTrialAfterTimeLimit()
         {
             var trialStarted = CurrentTrial;
@@ -530,7 +555,10 @@ namespace ExperimentControl
             // End the experimental task and waits for the user response (which will conclude the trial)
             _trialDuration = Time.time - _trialStartTime;
             _participantTriggerEnabled = false;
-            StopCoroutine(EndTrialAfterTimeLimit());
+            Debug.Log("COROUTINE:"); //TODO remove
+            Debug.Log(_endTrialAfterTimeLimit);
+            StopCoroutine(_endTrialAfterTimeLimit);
+            Debug.Log(_endTrialAfterTimeLimit);
             startEndClip.Play();
             SenorSummarySingletons.GetInstance<UICallbacks>().DeactivateEndTrialButton();
 
@@ -571,19 +599,44 @@ namespace ExperimentControl
         
         
         // Whenever a target is reported, proceed to the next target object (or if last target end the trial)
+        private bool _reportingTarget;
+        private FocusInfo _pointingTargetHand;
+        private FocusInfo _pointingTargetEye;
+        private FocusInfo _pointingTargetHead;
+        private int _targetIdx = 0;
+        
         private IEnumerator ReportTarget()
         {
             Debug.Log($"trg reported ({_reportedEventsCount})");
             
             // Display fixation dot for 1 second
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().ToggleFocusDot();
+            _reportingTarget = true;
+            _participantTriggerEnabled = false;
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().SetFocusDot(1);
             yield return new WaitForSeconds(1);
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().ToggleFocusDot();
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().SetFocusDot(0);
+            _reportingTarget = false;
+            _participantTriggerEnabled = true;
             
             // Next target
             if (!recordingPaused && !lastSecondRecording)
-                SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
+                SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject();
+            // SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
+
         }
+        
+        
+        private FocusInfo GetPointingTarget(Transform parentTransform, bool fromEyeTracker)
+        {
+            var eyeTracker = SenorSummarySingletons.GetInstance<EyeTracking>();
+            var focusInfo = new FocusInfo();
+            
+            var valid = fromEyeTracker?
+                eyeTracker.GetFocusPoint(GazeIndex.COMBINE, out focusInfo):
+                eyeTracker.GetFocusInfoFromRayCast(Vector3.forward, out focusInfo, parentTransform);
+            return focusInfo; 
+        }
+        
         
         /// Ending the experiment 
         /// EndTrial() is invoked when the max number of targets is reached, or when manually ended the trial.
@@ -602,7 +655,7 @@ namespace ExperimentControl
 
         public void EndTrial()
         {
-            StopCoroutine(EndTrialAfterTimeLimit());
+            StopCoroutine(_endTrialAfterTimeLimit);
             
             RecordDataEntry(new TrialConfigRecord
             {
@@ -667,8 +720,8 @@ namespace ExperimentControl
             trialInitiated.Invoke(); // Deactivates the UI buttons
             
             // Create filestream for the calibrationTest results
-            var eyeHandlers = new List<Data2File> {EyeTrackerDataHandler, SingleEyeDataHandlerL,
-                                                    SingleEyeDataHandlerR, SingleEyeDataHandlerC};
+            var eyeHandlers = new List<Data2File> {EyeTrackerDataHandler, SingleEyeDataHandlerL, SingleEyeDataHandlerR,
+                                                    SingleEyeDataHandlerC, EngineDataHandler};
             foreach(var h in eyeHandlers) h.NewTrial(_currBlockIdx, _currTrialIdx, calibrationTest:true);
 
             // Jump to the calibration screen

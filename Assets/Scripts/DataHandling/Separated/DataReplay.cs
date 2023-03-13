@@ -168,9 +168,9 @@ namespace DataHandling.Separated
 
         private void Awake()
         {
-           ReplayEngineDataRecord("C:\\Users\\Jaap de Ruyter\\AppData\\LocalLow\\DefaultCompany\\ExperimentPuzzle\\pp01a\\00_00EngineDataRecord.tsv", 
-               "C:\\Users\\Jaap de Ruyter\\AppData\\LocalLow\\DefaultCompany\\ExperimentPuzzle\\pp01a\\00_00SingleEyeDataRecordC.tsv");
-            
+           // ReplayEngineDataRecord("C:\\Users\\Jaap de Ruyter\\AppData\\LocalLow\\DefaultCompany\\ExperimentPuzzle\\pp01a\\00_00EngineDataRecord.tsv", 
+           //     "C:\\Users\\Jaap de Ruyter\\AppData\\LocalLow\\DefaultCompany\\ExperimentPuzzle\\pp01a\\00_00SingleEyeDataRecordC.tsv");
+           //  
         }
     }
 }

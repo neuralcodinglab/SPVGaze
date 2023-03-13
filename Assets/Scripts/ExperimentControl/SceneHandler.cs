@@ -100,7 +100,9 @@ namespace ExperimentControl
         {
             // Cycle through target objects in current env
             _currentTargetIdx = (_currentTargetIdx + 1) % CurrentEnvironment.targetObjects.Length;
-            ActivateTargetObject(CurrentEnvironment.targetObjects[_currentTargetIdx]);
+            var target = CurrentEnvironment.targetObjects[_currentTargetIdx];
+            ActivateTargetObject(target);
+            target.PlayClip();
         }
 
         public void ActivateAllDefaultTargets()
@@ -183,6 +185,7 @@ namespace ExperimentControl
             if (_currentTargetObject != null) _currentTargetObject.Deactivate();
             _currentTargetObject = newTargetObject;
             _currentTargetObject.Activate();
+            _currentEnv.ActiveTargetName = _currentTargetObject.name;
         }
 
         private void Awake()

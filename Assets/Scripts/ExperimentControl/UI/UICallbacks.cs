@@ -97,6 +97,8 @@ namespace ExperimentControl.UI
             var options = Enum.GetNames(typeof(Glasses)).Select(x => new TMP_Dropdown.OptionData(x));
             glassesDropdown.options = new List<TMP_Dropdown.OptionData>(options);
             glassesDropdown.value = 0;
+
+            btnCalibrate.interactable = false;
             
             // End trial / Next Trial / navigation buttons
             DeactivateEndTrialButton();
@@ -104,6 +106,10 @@ namespace ExperimentControl.UI
             RunExperiment.Instance.trialInitiated.AddListener(DeactivateBeginTrialButton); 
             RunExperiment.Instance.trialInitiated.AddListener(DeactivateNavigationBtns);
             RunExperiment.Instance.trialInitiated.AddListener(DeactivateHiddenButtons);
+            RunExperiment.Instance.trialInitiated.AddListener(() =>
+            {
+                SceneRecognitionResponse = Environment.RoomCategory.None;
+            });
             RunExperiment.Instance.resumedRecording.AddListener(ActivateEndTrialButton);
             RunExperiment.Instance.trialCompleted.AddListener(ActivateNavigationBtns);
             RunExperiment.Instance.trialCompleted.AddListener(ActivateBeginTrialButton);
@@ -117,7 +123,7 @@ namespace ExperimentControl.UI
             SenorSummarySingletons.GetInstance<PhospheneSimulator>()
                 .onChangeGazeCondition.AddListener(condition => conditionVal.text = condition.ToString());
             RunExperiment.Instance.currentTrialChanged.AddListener(UpdateTrialInfo);
-
+            RunExperiment.Instance.currentTrialChanged.AddListener(() => {btnCalibrate.interactable = true;});
         }
 
         private void FixedUpdate()
@@ -229,7 +235,8 @@ namespace ExperimentControl.UI
 
         public void BtnCalibrate()
         {
-            SRanipal_Eye_API.LaunchEyeCalibration(Marshal.GetFunctionPointerForDelegate(new Action(ReturnFromCalibration)));
+            var result = SRanipal_Eye_API.LaunchEyeCalibration(Marshal.GetFunctionPointerForDelegate(new Action(ReturnFromCalibration)));
+            ReturnFromCalibration();
         }
 
         public void BtnToggleSimulator()
@@ -396,6 +403,11 @@ namespace ExperimentControl.UI
         public void ReturnFromCalibration()
         {
             Debug.Log("The Calibration returned!");
+            if (RunExperiment.Instance.CurrentTrial == null)
+            {
+                Debug.LogWarning("PLEASE REDO CALIBRATION AFTER STARTING THE EXPERIMENT TO ASSURE CALIBRATION QUALITY");
+                return;
+            }
             RunExperiment.Instance.RunCalibrationTest();
         }
         

@@ -94,13 +94,11 @@ namespace DataHandling.Separated
             var trialStr = $"{blockId:D2}_{trialId:D2}";
             if (calibrationTest) trialStr = $"{trialStr}_calibrationTest_";
             
-            // If file exists, don't override, but create new filename (with index inserted after trialStr)
+            // If file exists, don't override, but create new filename (trailing _ inserted after trialStr)
             var path = Path.Join(SubjectDir, trialStr + FileName + FileEnding);
-            var i = 0;
             while (File.Exists(path))
             {
-                i += 1;
-                trialStr = $"{trialStr}_{i}";
+                trialStr = $"{trialStr}_";
                 path = Path.Join(SubjectDir, trialStr + FileName + FileEnding);
             }
             

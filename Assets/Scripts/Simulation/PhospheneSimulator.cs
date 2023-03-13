@@ -449,6 +449,7 @@ namespace Simulation
           // checkpointChecker.gameObject.SetActive(false);
           //
           SurfaceReplacement.DeactivateReplacementShader(targetCamera);
+          SetFocusDot(0);
           SetEdgeDetection(false);
           SetPhospheneSim(false);
         }

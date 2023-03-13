@@ -181,7 +181,7 @@ namespace Simulation
         /// <param name="index">A source of eye gaze data.</param>
         /// <param name="focusInfo">Information about where the ray focused on.</param>
         /// <returns>Indicates whether the ray hits a collider.</returns>
-        private bool GetFocusPoint(GazeIndex index, out FocusInfo focusInfo)
+        public bool GetFocusPoint(GazeIndex index, out FocusInfo focusInfo)
         {
             SingleEyeData eyeData = index switch
             {
@@ -206,10 +206,11 @@ namespace Simulation
             return valid;
         }
 
-        public bool GetFocusInfoFromRayCast(Vector3 direction,  out FocusInfo focusInfo)
+        public bool GetFocusInfoFromRayCast(Vector3 direction, out FocusInfo focusInfo) =>
+            GetFocusInfoFromRayCast(direction, out focusInfo, parentTransform: sim.targetCamera.transform);
+        public bool GetFocusInfoFromRayCast(Vector3 direction,  out FocusInfo focusInfo, Transform parentTransform)
         {
-            Ray rayGlobal = new Ray(sim.targetCamera.transform.position,
-                sim.targetCamera.transform.TransformDirection(direction));
+            Ray rayGlobal = new Ray(parentTransform.position, parentTransform.TransformDirection(direction));
             RaycastHit hit;
             var valid = sphereCastRadius == 0 ? 
                 Physics.Raycast(rayGlobal, out hit, sphereCastDistance, hallwayLayerMask) :
