@@ -46,6 +46,7 @@ namespace ExperimentControl
         
         private TargetObject _currentTargetObject; // Max. one target should be active at a given time.
         private int _currentTargetIdx;
+        private int _persistentTargetIdx;
  
         
         
@@ -69,6 +70,8 @@ namespace ExperimentControl
             var allEnvs = GetAllEnvironments().ToList();
             return allEnvs.Where(value => value.practiceEnv == false).ToArray();
         }
+        public Environment GetEnvironmentByName(string environmentName) =>
+            _allEnvironments.Single(value => value.Name == environmentName);
 
         public void NextEnvironment(InputAction.CallbackContext ctx) => NextEnvironment();
         private void NextEnvironment()
@@ -96,6 +99,18 @@ namespace ExperimentControl
         }
         
         public void NextTargetObject(InputAction.CallbackContext ctx) => NextTargetObject();
+
+        public void NextTargetObject(bool usePersistentIdx)
+        {
+            // The persistent Target index is not reset in between trials, so continually increments and cycles trough all targets
+            if (usePersistentIdx)
+            {
+                _currentTargetIdx = _persistentTargetIdx;
+                _persistentTargetIdx = (_persistentTargetIdx + 1) % CurrentEnvironment.targetObjects.Length;
+            }
+            NextTargetObject();
+        }
+        
         public void NextTargetObject()
         {
             // Cycle through target objects in current env
@@ -153,7 +168,8 @@ namespace ExperimentControl
             text.text = message;
         }
 
-
+        public void JumpToEnvironment(string environmentName) =>
+            JumpToEnvironment(GetEnvironmentByName(environmentName));
         public void JumpToEnvironment(Environment newEnv)
         {
             // // If the new room is in a different 3D scene model, then deactivate the old 3D scene. 
@@ -180,6 +196,12 @@ namespace ExperimentControl
 
         public void JumpToCalibrationTestScreen() => JumpToEnvironment(calibrationTestScreen);
 
+        public TargetObject GetTargetObjectByName(string targetName)
+        {
+            Debug.Log($"Looking for {targetName} in {_currentEnv.targetObjects}. First element is {_currentEnv.targetObjects[0]}");
+            return _currentEnv.targetObjects.Single(value => value.name == targetName);
+        }
+        public void ActivateTargetObject(string targetName) => ActivateTargetObject(GetTargetObjectByName(targetName));
         public void ActivateTargetObject(TargetObject newTargetObject)
         {
             if (_currentTargetObject != null) _currentTargetObject.Deactivate();
@@ -196,6 +218,7 @@ namespace ExperimentControl
             environmentChanged = new UnityEvent<Environment>();
             _allEnvironments = GetAllEnvironments();
             _practiceEnvironments = GetPracticeEnvironments();
+            _persistentTargetIdx = -1;
             SenorSummarySingletons.RegisterType(this);
         }
 

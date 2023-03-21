@@ -468,7 +468,7 @@ namespace ExperimentControl
                     SenorSummarySingletons.GetInstance<PhospheneSimulator>().DeactivateSimulation();
                     break;
                 case Task.VisualSearch:
-                    SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject();
+                    SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject(usePersistentIdx:true);
                     // SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
                     break;
             }
@@ -620,7 +620,7 @@ namespace ExperimentControl
             
             // Next target
             if (!recordingPaused && !lastSecondRecording)
-                SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject();
+                SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject(usePersistentIdx:true);
             // SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
 
         }
