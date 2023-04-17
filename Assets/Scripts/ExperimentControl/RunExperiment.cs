@@ -222,7 +222,7 @@ namespace ExperimentControl
             var practiceBlock = new List<Trial>()
             {
                 // Free practice (5 minutes)
-                new Trial(Task.FreePractice, cond1, practiceEnvs[0], 300),
+                new Trial(Task.FreePractice, cond1, practiceEnvs[0], 500),
                 
                 // Practice the tasks with condition 1 (2.5 minutes)
                 new Trial(Task.VisualSearch, cond1, practiceEnvs[0], 90), 
@@ -237,7 +237,7 @@ namespace ExperimentControl
                 new Trial(Task.SceneRecognition, cond3, practiceEnvs[3], 60),
                 
                 // Final free practice round (2,5 minutes)
-                new Trial(Task.FreePractice, cond1, practiceEnvs[0], 150),
+                new Trial(Task.FreePractice, cond1, practiceEnvs[0], 300),
             };
 
             // Scene recognition Sessions 

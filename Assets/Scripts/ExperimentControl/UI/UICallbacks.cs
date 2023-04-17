@@ -106,6 +106,7 @@ namespace ExperimentControl.UI
             RunExperiment.Instance.trialInitiated.AddListener(DeactivateBeginTrialButton); 
             RunExperiment.Instance.trialInitiated.AddListener(DeactivateNavigationBtns);
             RunExperiment.Instance.trialInitiated.AddListener(DeactivateHiddenButtons);
+            RunExperiment.Instance.trialInitiated.AddListener(() => { btnCalibrate.interactable = false; });
             RunExperiment.Instance.trialInitiated.AddListener(() =>
             {
                 SceneRecognitionResponse = Environment.RoomCategory.None;
@@ -453,6 +454,7 @@ namespace ExperimentControl.UI
             btnToggleEdgeDetection.interactable = true;
             btnResetAlignment.interactable = true;
             btnCycleTargets.interactable = true;
+            btnCalibrate.interactable = true;
             ActivateSimulationControlBtns();
         }
         
