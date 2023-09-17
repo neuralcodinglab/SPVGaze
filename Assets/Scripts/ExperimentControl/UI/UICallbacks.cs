@@ -466,6 +466,5 @@ namespace ExperimentControl.UI
             btnResetAlignment.interactable = false;
             btnCycleTargets.interactable = false;
         }
-
     }
 }
