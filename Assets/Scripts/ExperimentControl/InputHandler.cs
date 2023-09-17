@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using ExperimentControl.UI;
 using Simulation;
 using Unity.XR.CoreUtils;
 using UnityEngine;
@@ -15,6 +17,7 @@ namespace ExperimentControl
         public GameObject xrOriginObj;
         public Transform head;
         public XROrigin xrOrigin;
+        public Transform cameraOffset;
         
         [Header("Subject Movement Control")]
         public float moveSpeed= 3f;
@@ -31,7 +34,21 @@ namespace ExperimentControl
 
         private ControllerVibrator rightController, leftController;
         
-        #region Setting up control references in Editor        
+        #region Setting up control references in Editor
+
+        [SerializeField]
+        private InputActionProperty participantTrigger1;
+
+        /// <summary>
+        /// The input system action to register when the participant clicks and points towards a target.
+        /// </summary>
+        public InputActionProperty ParticipantTrigger1Action
+
+        {
+            get => participantTrigger1;
+            set => SetInputActionProperty(ref participantTrigger1, value);
+        }
+        
         [SerializeField]
         private InputActionProperty movePlayer;
         /// <summary>
@@ -163,6 +180,7 @@ namespace ExperimentControl
             coll ??= GetComponent<Collider>();
 
             var simulator = FindObjectOfType<PhospheneSimulator>();
+            var runExperiment = FindObjectOfType<RunExperiment>();
             
             MoveAction.action.performed += Move;
             MoveAction.action.canceled += Move;
@@ -178,6 +196,7 @@ namespace ExperimentControl
                 MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Hallway3]);
             MoveToPlaygroundAction.action.performed += ctx =>
                 MoveToNewHallway(HallwayCreator.HallwayObjects[HallwayCreator.Hallways.Playground]);
+            ParticipantTrigger1Action.action.performed += runExperiment.OnParticipantTrigger1;
         }
 
         public UnityEvent<HallwayCreator.Hallway> onChangeHallway;
@@ -202,12 +221,17 @@ namespace ExperimentControl
 
         public void ResetCamera2OriginAlignment()
         {
-            var head = SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.position;
-            var originTransform = xrOrigin.transform;
-            var y = originTransform.position.y;
-            var pos = new Vector3(head.x, y, head.z);
-            originTransform.position = pos;
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.position = head;
+            var headRotation = SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.localRotation;
+            var rotationCorrection = Quaternion.Inverse(headRotation).eulerAngles;
+            cameraOffset.transform.localRotation = Quaternion.Euler(new Vector3(0, rotationCorrection.y, 0));
+            
+            var headPos = SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.position;
+            var originPos = xrOrigin.transform.position;
+            var offsetPos = cameraOffset.transform.position;
+
+            var posCorrection = offsetPos - headPos + originPos;
+            posCorrection.y = originPos.y;
+            offsetPos = posCorrection;
         }
 
         private void Update()
@@ -301,5 +325,30 @@ namespace ExperimentControl
                 RunExperiment.Instance.LeftController = controller;
             }
         }
+
+        // public Environment.RoomCategory GetSceneRecognitionResponse()
+        // {
+        //     var UI = SenorSummarySingletons.GetInstance<UICallbacks>();
+        //     UI.SceneRecognitionResponse = Environment.RoomCategory.None;
+        //     UI.ActivateSceneResponseBtns();
+        //
+        //     
+        //     StartCoroutine(WaitForSceneRecognitionResponse());
+        //     return SenorSummarySingletons.GetInstance<UICallbacks>().SceneRecognitionResponse;
+        // }
+        // private IEnumerator WaitForSceneRecognitionResponse()
+        // {
+        //     // Set response to None
+        //     var UI = SenorSummarySingletons.GetInstance<UICallbacks>();
+        //     UI.SceneRecognitionResponse = Environment.RoomCategory.None;
+        //     UI.ActivateSceneResponseBtns();
+        //     
+        //     // Wait until response != None
+        //     yield return new WaitUntil(() =>  UI.SceneRecognitionResponse != Environment.RoomCategory.None);
+        //     Debug.Log($"Response: room type was {UI.SceneRecognitionResponse}");
+        //     UI.DeactivateSceneResponseBtns();
+        // }
+        
+        
     }
 }

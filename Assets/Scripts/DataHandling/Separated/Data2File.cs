@@ -81,17 +81,30 @@ namespace DataHandling.Separated
             Directory.CreateDirectory(SubjectDir);
             IsRecording = false;
         }
-        
-        public void NewTrial(int blockId, int trialId)
+
+        public void NewTrial(int blockId, int trialId) => NewTrial(blockId, trialId, false);
+        public void NewTrial(int blockId, int trialId, bool calibrationTest)
         {
             CheckInitialised();
 
             if (IsRecording) 
                 throw new InvalidOperationException("Forgot to end last trial before starting new one");
             
+            // If validationTest, add flag to filename
             var trialStr = $"{blockId:D2}_{trialId:D2}";
+            if (calibrationTest) trialStr = $"{trialStr}_calibrationTest_";
+            
+            // If file exists, don't override, but create new filename (trailing _ inserted after trialStr)
+            var path = Path.Join(SubjectDir, trialStr + FileName + FileEnding);
+            while (File.Exists(path))
+            {
+                trialStr = $"{trialStr}_";
+                path = Path.Join(SubjectDir, trialStr + FileName + FileEnding);
+            }
+            
+            // Create filestream
             Fs = new FileStream(
-                Path.Join(SubjectDir, trialStr + FileName + FileEnding),
+                path,
                 FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite, 4096, FileOptions.Asynchronous
             );
 

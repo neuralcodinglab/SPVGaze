@@ -37,7 +37,7 @@ namespace ExperimentControl
 
         private void OnCollisionEnter(Collision collision)
         {
-            if (RunExperiment.Instance.betweenTrials) return;
+            if (RunExperiment.Instance.recordingPaused) return;
             
             var other = collision.gameObject;
             // starting to cross checkpoint
@@ -61,7 +61,7 @@ namespace ExperimentControl
 
         private void OnCollisionExit(Collision collision)
         {
-            if (RunExperiment.Instance.betweenTrials) return;
+            if (RunExperiment.Instance.recordingPaused) return;
             
             var other = collision.gameObject;
             if (other.GetInstanceID() != checkpointID)

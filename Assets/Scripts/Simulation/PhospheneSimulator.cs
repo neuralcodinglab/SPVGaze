@@ -28,10 +28,12 @@ namespace Simulation
         private float traceIncrease = 0.1f; // The habituation strength: the factor by which stimulation leads to buildup of memory trace
         [SerializeField]
         private float traceDecay = 0.9f; // The factor by which the stimulation memory trace decreases
-
+        [SerializeField] 
+        private float relativeRFSize = 4.0f; // the size of the 'receptive field' (sampling area) relative to the phosphene size 
+        
         // Image processing settings
         private float runSimulation = 0;
-        private bool runEdgeDetection = true;
+        private bool runEdgeDetection = false;
         private int renderFocusDot = 0;
         
         // protected RenderTextureDescriptor ActvTexDesc;
@@ -107,6 +109,7 @@ namespace Simulation
         private static readonly int ShPrIntensityDecay = Shader.PropertyToID("intensity_decay");
         private static readonly int ShPrTraceIncrease = Shader.PropertyToID("trace_increase");
         private static readonly int ShPrTraceDecay = Shader.PropertyToID("trace_decay");
+        private static readonly int ShPrRelaltiveRFSize = Shader.PropertyToID("_RelativeRFSize");
       
         #endregion
 
@@ -138,6 +141,7 @@ namespace Simulation
           simulationComputeShader.SetFloat(ShPrIntensityDecay, intensityDecay);
           simulationComputeShader.SetFloat(ShPrTraceIncrease, traceIncrease);
           simulationComputeShader.SetFloat(ShPrTraceDecay, traceDecay);
+          simulationComputeShader.SetFloat(ShPrRelaltiveRFSize, relativeRFSize);
 
           simulationComputeShader.SetBuffer(0, ShPrPhospheneBuffer, phospheneBuffer);
           // Set the default EyeTrackingCondition (Ignore Gaze)
@@ -171,6 +175,12 @@ namespace Simulation
 
           // in between texture to put processed image on before blitting from this to target
           var preTargetPing = RenderTexture.GetTemporary(target.descriptor);
+          
+          // TODO: support low-res rendertexture? (thicker edges and less compute...
+          // var descriptor = target.descriptor;
+          // descriptor.height = (int)descriptor.height / 4;
+          // descriptor.width = (int)descriptor.height / 4;
+          // var preTargetPing = RenderTexture.GetTemporary(descriptor);
           
           // Run edge detection shader if toggled on
           if (runEdgeDetection)
@@ -310,7 +320,8 @@ namespace Simulation
         public void NextEyeTrackingCondition(InputAction.CallbackContext ctx) => NextEyeTrackingCondition();
         private void NextEyeTrackingCondition()
         {
-          SetGazeTrackingCondition((EyeTracking.EyeTrackingConditions)((int)(EyeTrackingCondition + 1) % nEyeTrackingModes));
+          // SetGazeTrackingCondition((EyeTracking.EyeTrackingConditions)((int)(EyeTrackingCondition + 1) % nEyeTrackingModes));
+          SetGazeTrackingCondition((EyeTracking.EyeTrackingConditions)((int)(EyeTrackingCondition + 2) % nEyeTrackingModes)); // JR: reversed order for easier explanation.
         }
         
         public void SetGazeTrackingCondition(EyeTracking.EyeTrackingConditions condition)
@@ -414,23 +425,52 @@ namespace Simulation
           }
         }
 
-        public void StartTrial(EyeTracking.EyeTrackingConditions condition)
+        // Public methods for activating/deactivating the full simulation (img processing + phosphene simulation)
+        
+        private bool _simulationActive;
+
+        public void ActivateSimulation() => ActivateSimulation(gazeCondition);
+        public void ActivateSimulation(EyeTracking.EyeTrackingConditions condition)
         {
-          boxChecker.gameObject.SetActive(true);
-          checkpointChecker.gameObject.SetActive(true);
-          
+          _simulationActive = true;
+          // boxChecker.gameObject.SetActive(true);
+          // checkpointChecker.gameObject.SetActive(true);
+          //
           SetEdgeDetection(true);
           SetPhospheneSim(true);
           SetGazeTrackingCondition(condition);
+          SurfaceReplacement.ActivateReplacementShader(targetCamera, SurfaceReplacement.ReplacementModes.Normals);
         }
 
-        public void StopTrial()
+        public void DeactivateSimulation()
         {
-          boxChecker.gameObject.SetActive(false);
-          checkpointChecker.gameObject.SetActive(false);
-          
+          _simulationActive = false;
+          // boxChecker.gameObject.SetActive(false);
+          // checkpointChecker.gameObject.SetActive(false);
+          //
+          SurfaceReplacement.DeactivateReplacementShader(targetCamera);
+          SetFocusDot(0);
           SetEdgeDetection(false);
           SetPhospheneSim(false);
         }
+
+        public void ToggleSimulationActive() => ToggleSimulationActive(gazeCondition);
+        public void ToggleSimulationActive(EyeTracking.EyeTrackingConditions condition)
+        {
+          if (_simulationActive)
+            DeactivateSimulation();
+          else
+            ActivateSimulation(condition);
+        }
+        
+        public void ActivateImageProcessing()
+        {
+          SurfaceReplacement.ActivateReplacementShader(targetCamera, SurfaceReplacement.ReplacementModes.Normals);
+          SetEdgeDetection(true);
+          SetPhospheneSim(false);
+        }
+        
+        
+        
     }
 }

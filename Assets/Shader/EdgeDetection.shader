@@ -73,8 +73,7 @@
         		}
 
         		fixed4 FragColor = ApplySobel(textures);
-                float bright = 10 * Luminance(FragColor);
-                return bright;
+                return FragColor.r; // edges are encoded as (magn, magn, magn, orientation)
             }
             ENDCG
         }

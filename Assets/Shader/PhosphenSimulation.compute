@@ -26,6 +26,7 @@ float input_effect;     // The factor by which stimulation accumulates to phosph
 float intensity_decay;  // The factor by which previous activation still influences current activation
 float trace_increase;   // The habituation strength: the factor by which stimulation leads to buildup of memory trace
 float trace_decay;      // The factor by which the stimulation memory trace decreases
+float _RelativeRFSize;  // The size of the 'receptive field' of the phosphene (sampling radius for activation)
 
 RWStructuredBuffer<Phosphene> phosphenes;
 
@@ -56,7 +57,29 @@ void CalculateActivations (uint3 id : SV_DispatchThreadID)
 
   // Read stimulation value from input texture
   uint2 index = uint2((uint)(samplePosition.x * ScreenResolution.x), (uint)(samplePosition.y * ScreenResolution.y));
-  float stim = InputTexture[uint3(index, eyeIdx)].x;
+  float stim = InputTexture[uint3(index, eyeIdx)].x; //JR TODO: this should be changed (no stereovision!)
+  
+  // Sample the activation over the entire 'receptive field' of the phosphene
+  const uint rfSize = phosphenes[phosIdx].size * _RelativeRFSize * ScreenResolution.x;;
+  for (uint xOff=0; xOff < rfSize; xOff++)
+  {
+    for (uint yOff=0; yOff < rfSize; yOff++)
+    {
+      // Center was already added before these loops
+      if (xOff + yOff == 0)
+        continue;
+      
+      // if we are past radius, move to next x-location, as we won't be inside the circle again if we increase the radius
+      if ((yOff*yOff + xOff*xOff) >= (rfSize * rfSize))
+        break;
+  
+      // Sample in the four quadrants around the index location (max pooling)
+      stim = max(stim, InputTexture[uint3(index.x + xOff, index.y + yOff, id.z)]);
+      stim = max(stim, InputTexture[uint3(index.x - xOff, index.y + yOff, id.z)]);
+      stim = max(stim, InputTexture[uint3(index.x + xOff, index.y - yOff, id.z)]);
+      stim = max(stim, InputTexture[uint3(index.x - xOff, index.y - yOff, id.z)]);
+    }
+  }
 
   //***************************************************************************
   // Update activation and trace
@@ -87,7 +110,8 @@ void CalculateActivations (uint3 id : SV_DispatchThreadID)
  */
 float Gaussian(float d, float sigma)
 {
-  float c = 1.0 / (sigma * 2.50662); // 2.50662 is approximation of sqrt(2*pi)
+  // float c = 1.0 / (sigma * 2.50662); // 2.50662 is approximation of sqrt(2*pi)
+  float c = 1.0; // JR: Scales the gaussian to max 1.0
   return c * exp( -(d * d) / (2 * sigma * sigma) );
 }
 
@@ -102,6 +126,7 @@ void SpreadActivations(uint3 id : SV_DispatchThreadID)
   float2 pixel = ActivationTexture[id];
   const float actv = pixel.x;
   const float size = pixel.y;
+  
   // if it's a pixel without activation or radius, we are done
   if (size < 1e-5 || actv < 0.001) { return; }
 
@@ -110,13 +135,12 @@ void SpreadActivations(uint3 id : SV_DispatchThreadID)
 
   // write activation into output pixel
   SimulationRenderTexture[uint3(id.x, y_corr, id.z)] = float4(actv, actv, actv, 1);
+  
   // sigma is diameter, size is radius
   const float sigma = size * 2.0;
-  // scale to normalise distribution on so that 0 distance has maximum activation (1 * actv)
-  const float scale = Gaussian(0, sigma);
 
   // after 3 deviations, tail is near unobservable, so spread up to 3 deviations
-  const uint max_r = size * 4.0 * ScreenResolution.x; // 2 deviations for performance
+  const uint max_r = size * 6.0 * ScreenResolution.x; // 2 deviations for performance
   // to save sqrt for radius comparison save r^2
   const uint maxr2 = max_r * max_r;
 
@@ -128,20 +152,21 @@ void SpreadActivations(uint3 id : SV_DispatchThreadID)
       // don't overwrite centre
       if (xOff + yOff == 0)
         continue;
+      
       // if we are past radius, move to next x-location, as we won't be inside the circle again if we increase the radius
       if ((yOff*yOff + xOff*xOff) >= maxr2)
         break;
 
       // calculate spread according to gaussian and scale
-      float dist = sqrt( (xOff*xOff) / (ScreenResolution.x * ScreenResolution.x)
-        + (yOff*yOff) / (ScreenResolution.y * ScreenResolution.y) );
-      float spread = actv * Gaussian(dist, sigma) / scale;
+      float dist = sqrt( (float)(xOff*xOff) / (float)(ScreenResolution.x * ScreenResolution.x)
+        + (float)(yOff*yOff) / (float)(ScreenResolution.y * ScreenResolution.y) );
+      float4 spread = actv * Gaussian(dist, sigma) * float4(1, 1, 1, 1); //JR: removed scale (solved in Gaussian funciton)
 
       // spread the activation to pixels (since we only iterate one radius, we are writing to all 4 quadrants)
-      SimulationRenderTexture[uint3(id.x + xOff, y_corr + yOff, id.z)] += float4(spread, spread, spread, 0);
-      SimulationRenderTexture[uint3(id.x - xOff, y_corr + yOff, id.z)] += float4(spread, spread, spread, 0);
-      SimulationRenderTexture[uint3(id.x + xOff, y_corr - yOff, id.z)] += float4(spread, spread, spread, 0);
-      SimulationRenderTexture[uint3(id.x - xOff, y_corr - yOff, id.z)] += float4(spread, spread, spread, 0);
+      SimulationRenderTexture[uint3(id.x + xOff, y_corr + yOff, id.z)] += spread; // Inlcudes midlines (x=0 or y =0)
+      SimulationRenderTexture[uint3(id.x - xOff, y_corr + yOff, id.z)] += spread * (float)(xOff>0); // Don't override vert.  midline
+      SimulationRenderTexture[uint3(id.x + xOff, y_corr - yOff, id.z)] += spread * (float)(yOff>0); // Don't override hor. midline
+      SimulationRenderTexture[uint3(id.x - xOff, y_corr - yOff, id.z)] += spread * (float)(yOff>0) * (float)(xOff>0); // Don't override midlines
     }
   }
 }

@@ -6,7 +6,10 @@ using System.Linq;
 using DataHandling;
 using DataHandling.Separated;
 using ExperimentControl.UI;
+using mattmc3.dotmore.Extensions;
 using Simulation;
+using Unity.VisualScripting;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
@@ -18,39 +21,18 @@ namespace ExperimentControl
 {
     public class RunExperiment : MonoBehaviour
     {
+        // public string dataSaveDirectory;
         public GameObject xrOrigin;
-        public CollisionHandler boxCheck;
-        public CheckpointHandler zoneCounter;
         public GameObject xrHead;
         public GameObject handLeft;
         internal ControllerVibrator LeftController;
         public GameObject handRight;
         internal ControllerVibrator RightController;
-        
-        public static RunExperiment Instance { get; private set; }
+        public GameObject waitingScreen;
+        [SerializeField] private AudioSource eventClip;
+        [SerializeField] private AudioSource startEndClip;
 
-        private List<List<Tuple<EyeTracking.EyeTrackingConditions, HallwayCreator.Hallways>>> _blocks = new ()
-        {
-            new()
-            {
-                new(EyeTracking.EyeTrackingConditions.GazeIgnored, HallwayCreator.Hallways.Hallway1),
-                new(EyeTracking.EyeTrackingConditions.SimulationFixedToGaze, HallwayCreator.Hallways.Hallway2),
-                new(EyeTracking.EyeTrackingConditions.GazeAssistedSampling, HallwayCreator.Hallways.Hallway3)
-            },
-            new()
-            {
-                new(EyeTracking.EyeTrackingConditions.GazeIgnored, HallwayCreator.Hallways.Hallway2),
-                new(EyeTracking.EyeTrackingConditions.SimulationFixedToGaze, HallwayCreator.Hallways.Hallway3),
-                new(EyeTracking.EyeTrackingConditions.GazeAssistedSampling, HallwayCreator.Hallways.Hallway1)
-            },
-            new()
-            {
-                new(EyeTracking.EyeTrackingConditions.GazeIgnored, HallwayCreator.Hallways.Hallway3),
-                new(EyeTracking.EyeTrackingConditions.SimulationFixedToGaze, HallwayCreator.Hallways.Hallway1),
-                new(EyeTracking.EyeTrackingConditions.GazeAssistedSampling, HallwayCreator.Hallways.Hallway2)
-            }
-        };
-        
+        public static RunExperiment Instance { get; private set; }
         private Data2File TrialConfigHandler { get; set; }
         private Data2File EngineDataHandler { get; set; }
         private Data2File EyeTrackerDataHandler { get; set; }
@@ -59,10 +41,13 @@ namespace ExperimentControl
         private Data2File SingleEyeDataHandlerC { get; set; }
         private IEnumerable<Data2File> allHandlers; 
         
-        internal bool betweenTrials = true;
+        internal bool recordingPaused = true;
 
+        public UnityEvent trialInitiated;
+        public UnityEvent resumedRecording;
         public UnityEvent trialCompleted;
         public UnityEvent blockCompleted;
+        public UnityEvent experimentCompleted;
 
         private void Awake()
         {
@@ -95,8 +80,10 @@ namespace ExperimentControl
                 SingleEyeDataHandlerC
             };
 
+            resumedRecording ??= new UnityEvent();
             trialCompleted ??= new UnityEvent();
             blockCompleted ??= new UnityEvent();
+            experimentCompleted ??= new UnityEvent();
         }
 
         private void Start()
@@ -104,156 +91,15 @@ namespace ExperimentControl
             LeftController = handLeft.GetComponentInChildren<ControllerVibrator>();
             RightController = handRight.GetComponentInChildren<ControllerVibrator>();
         }
-
-        private bool lastSecondRecording;
-        private bool manuallyEndedTrial;
-
-        private void Update()
-        {
-            if (!lastSecondRecording && StaticDataReport.InZone >= lastZone && !manuallyEndedTrial)
-            {
-                lastSecondRecording = true;
-                Invoke(nameof(EndTrial), 1f);
-            }
-        }
-
-        public void ManuallyEndTrial()
-        {
-            manuallyEndedTrial = true;
-            Invoke(nameof(EndTrial), 1f);
-        }
-
-        public void EndTrial()
-        {
-            StaticDataReport.InZone = 0;
-            lastZone = int.MaxValue;
-            lastSecondRecording = false;
-            betweenTrials = true;
-            
-            manuallyEndedTrial = false;
-            
-            foreach(var h in allHandlers) h.StopTrial();
-            
-            trialCompleted?.Invoke();
-            StartNewTrial();
-        }
-
-        private void FixedUpdate()
-        {
-            if (betweenTrials) return;
-
-            var record = new EngineDataRecord(); 
-            record.TimeStamp = DateTime.Now.Ticks;
-            record.XROriginPos = xrOrigin.transform.position;
-            record.XROriginRot = xrOrigin.transform.rotation;
-            record.XROriginInBox = boxCheck.InBox;
-            record.XROriginInCheckpoint = zoneCounter.InCheckpoint;
-            record.XRHeadPos = xrHead.transform.position;
-            record.XRHeadRot = xrHead.transform.rotation;
-            record.HandLPos = handLeft.transform.position;
-            record.HandLRot = handLeft.transform.rotation;
-            record.HandLInBox = LeftController.inBox;
-            record.HandLInWall = LeftController.inWall;
-            record.HandRPos = handRight.transform.position;
-            record.HandRRot = handRight.transform.rotation;
-            record.HandRInBox = RightController.inBox;
-            record.HandRInWall = RightController.inWall;
-            record.CollisionCount = StaticDataReport.CollisionCount;
-            record.CheckpointCount = StaticDataReport.InZone;
-            record.FrameCount = Time.frameCount;
-
-            RecordDataEntry(record);
-        }
-
-        public void StartExperiment(string subjId)
-        {           
-            // Shuffle hallway-condition matrix
-            _blocks = _blocks.OrderBy(_ => Random.value).ToList();
-            _blocks[0] = _blocks[0].OrderBy(_ => Random.value).ToList();
-            _blocks[1] = _blocks[1].OrderBy(_ => Random.value).ToList();
-            _blocks[2] = _blocks[2].OrderBy(_ => Random.value).ToList();
-            
-            // create folders and files
-            var subjectDir = Path.Join(Application.persistentDataPath, subjId);
-            if (Directory.Exists(subjectDir))
-            {
-                var tmp = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
-                Debug.LogWarning($"Subject Directory for {subjId} exists. Replacing with {tmp}");
-                subjId = tmp;
-                SenorSummarySingletons.GetInstance<UICallbacks>().subjID.text = subjId;
-            }
-            foreach(var h in allHandlers) h.NewSubject(subjId);
-            
-            // and go
-            currBlock = -1;
-            StartNewBlock();
-        }
-
-        private int currBlock = -1;
-        private int currTrial = -1;
-        private int lastZone = int.MaxValue;
-
-        public void StartNewBlock()
-        {
-            currBlock += 1;
-            if (currBlock > _blocks.Count - 1)
-            {
-                ConcludeBlock();
-                return;
-            }
-            
-            currTrial = -1;
-            
-            StartNewTrial();
-        }
-
-        private void StartNewTrial()
-        {
-            currTrial += 1;
-            StaticDataReport.InZone = 0;
-            lastZone = int.MaxValue;
-            StaticDataReport.CollisionCount = 0;
-
-            if (currTrial > _blocks[currBlock].Count - 1)
-            {
-                ConcludeBlock();
-                if (currBlock < _blocks.Count)
-                    blockCompleted?.Invoke();
-                return;
-            }
-            
-            // update UI
-            SenorSummarySingletons.GetInstance<UICallbacks>().UpdateBlockAndTrial(currBlock + 1, currTrial + 1);
-
-            var (condition, hallway) = _blocks[currBlock][currTrial];
-            lastZone = HallwayCreator.HallwayObjects[hallway].LastZoneId;
-
-            foreach(var h in allHandlers) h.NewTrial(currBlock, currTrial);
-            
-            SenorSummarySingletons.GetInstance<InputHandler>().MoveToNewHallway(HallwayCreator.HallwayObjects[hallway]);
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().StartTrial(condition);
-            
-            betweenTrials = false;
-            RecordDataEntry(new TrialConfigRecord
-            {
-                GazeCondition = condition,
-                Hallway = hallway,
-                Glasses = (Glasses)SenorSummarySingletons.GetInstance<UICallbacks>().glassesDropdown.value,
-                GazeRaySensitivity = SenorSummarySingletons.GetInstance<EyeTracking>().GazeRaySensitivity,
-                DataDelimiter = Data2File.Delimiter,
-            });
-        }
-
-        private void ConcludeBlock()
-        {
-            SenorSummarySingletons.GetInstance<UICallbacks>().BtnPlayground();
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().StopTrial();
-            SenorSummarySingletons.GetInstance<UICallbacks>().PostBlock(allHandlers);
-        }
-
+        
+        /// Data recording
+        /// at each fixed update, an entry is recorded for the unity engine data
+        /// the other datapoints are recorded upon the start of the trial and start of the experiment.
+        
+        
         private void RecordDataEntry(IDataStructure entry, Data2File handler)
         {
-            if(betweenTrials) return;
+            if(recordingPaused) return;
             
             handler.AddRecord(entry);
         }
@@ -279,6 +125,626 @@ namespace ExperimentControl
                     throw new ArgumentOutOfRangeException();
             }
         }
+        private void FixedUpdate()
+        {
+            var trgCollider = string.Empty; 
+            if (_reportingTarget)
+            {
+                _pointingTargetEye = GetPointingTarget(xrHead.transform, fromEyeTracker: true);
+                _pointingTargetHead = GetPointingTarget(xrHead.transform, fromEyeTracker: false);
+                _pointingTargetHand = GetPointingTarget(handRight.transform, fromEyeTracker: false);
+                if (_pointingTargetHand.collider is not null) trgCollider = _pointingTargetHand.collider.gameObject.name;
+            }
+
+            if (recordingPaused) return;
+            var record = new EngineDataRecord(); 
+            record.TimeStamp = DateTime.Now.Ticks;
+            record.XROriginPos = xrOrigin.transform.position;
+            record.XROriginRot = xrOrigin.transform.rotation;
+            record.XRHeadPos = xrHead.transform.position;
+            record.XRHeadRot = xrHead.transform.rotation;
+            record.HandLPos = handLeft.transform.position;
+            record.HandLRot = handLeft.transform.rotation;
+            record.HandRPos = handRight.transform.position;
+            record.HandRRot = handRight.transform.rotation;
+            record.CollisionCount = StaticDataReport.CollisionCount;
+            record.FrameCount = Time.frameCount;
+            record.ReportedEventsCount = _reportedEventsCount;
+            record.ActiveTarget = CurrentTrial.Environment.ActiveTargetName;
+            record.PointLocationEye = _reportingTarget? _pointingTargetEye.point : Vector3.zero;
+            record.PointLocationHand = _reportingTarget? _pointingTargetHand.point : Vector3.zero;
+            record.PointLocationHead = _reportingTarget? _pointingTargetHead.point : Vector3.zero ;
+            record.TargetHit = trgCollider;
+            RecordDataEntry(record);
+            
+        }
+        
+       
+        
+        
+        /// The experiment trial configuration
+        /// 
+        /// Each block is measures 1 eye-tracking condition in several environments (1 environment = 1 trial)
+        /// Each trial consists of a scene-recognition section and a visual search section
+        /// 
+        /// There are 9 blocks in total (3 practice blocks and 6 experiment blocks), grouped into 3 sessions.
+        
+        // A trial contains of two tasks (sections). 
+        public enum Task
+        {
+            None,
+            FreePractice,
+            SceneRecognition,
+            VisualSearch
+        }
+
+        public class Trial
+        {
+            public Trial(Task task,
+                EyeTracking.EyeTrackingConditions eyeTrackingCondition,
+                Environment environment,
+                int maxDuration)
+            {
+                Task = task;
+                EyeTrackingCondition = eyeTrackingCondition;
+                Environment = environment;
+                MaxDuration = maxDuration;
+            }
+            public Task Task {get; set;}
+            public EyeTracking.EyeTrackingConditions EyeTrackingCondition {get; set;}
+            public Environment Environment {get; set;}
+            public int MaxDuration {get; set;}
+        }
+        
+        // private Task _currTask;
+        private int _reportedEventsCount;
+        private Environment.RoomCategory _reportedRoomCategory = Environment.RoomCategory.None;
+        private int _reportedSubjectiveRating;
+        private float _trialStartTime;
+        private float _trialDuration;
+        
+        private List<List<Trial>> _blocks;
+
+        private List<List<Trial>> GetExperimentalBlocks()
+        {
+            // Shorthand for the gaze tracking conditions 
+            var (cond1, cond2, cond3) =
+                (EyeTracking.EyeTrackingConditions.GazeIgnored, 
+                    EyeTracking.EyeTrackingConditions.GazeAssistedSampling, 
+                    EyeTracking.EyeTrackingConditions.SimulationFixedToGaze);
+
+            // Get all environments, split in practice and experiment set and randomly shuffle 
+            var practiceEnvs = SenorSummarySingletons.GetInstance<SceneHandler>().GetPracticeEnvironments().ToList();
+            var experimentEnvs = SenorSummarySingletons.GetInstance<SceneHandler>().GetExperimentEnvironments().ToList();
+            Debug.Log($"Practice envs: {practiceEnvs.Count}, Exp. envs: {experimentEnvs.Count}");
+
+            // Practice Session 
+            var practiceBlock = new List<Trial>()
+            {
+                // Free practice (5 minutes)
+                new Trial(Task.FreePractice, cond1, practiceEnvs[0], 500),
+                
+                // Practice the tasks with condition 1 (2.5 minutes)
+                new Trial(Task.VisualSearch, cond1, practiceEnvs[0], 90), 
+                new Trial(Task.SceneRecognition, cond1, practiceEnvs[1], 60), 
+                
+                // Practice the tasks with condition 2 (2.5 minutes)
+                new Trial(Task.VisualSearch, cond2, practiceEnvs[0], 90),
+                new Trial(Task.SceneRecognition, cond2, practiceEnvs[2], 60),
+                
+                // Practice the tasks with condition 3 (2.5 minutes)
+                new Trial(Task.VisualSearch, cond3, practiceEnvs[0], 90),
+                new Trial(Task.SceneRecognition, cond3, practiceEnvs[3], 60),
+                
+                // Final free practice round (2,5 minutes)
+                new Trial(Task.FreePractice, cond1, practiceEnvs[0], 300),
+            };
+
+            // Scene recognition Sessions 
+            List<List<Trial>> GetSceneRecognitionSession(int trialsPerBlock)
+            {
+                var shuffledEnvs = experimentEnvs.OrderBy(_ => Random.value).ToList();
+                
+                // Scene Recognition blocks (n scene recognition trials, preceded with 1 visual search trial)
+                var srBlockCond1 = new List<Trial>() ;
+                srBlockCond1.Add(new Trial(Task.VisualSearch, cond1, practiceEnvs[0], 90));
+                foreach (var env in shuffledEnvs.GetRange(0, trialsPerBlock))
+                    srBlockCond1.Add(new Trial(Task.SceneRecognition, cond1, env, 90));
+        
+                var srBlockCond2 = new List<Trial>();
+                srBlockCond2.Add(new Trial(Task.VisualSearch, cond2, practiceEnvs[0], 90));
+                foreach (var env in shuffledEnvs.GetRange(trialsPerBlock, trialsPerBlock))
+                    srBlockCond2.Add(new Trial(Task.SceneRecognition, cond2, env, 90));
+        
+                var srBlockCond3 = new List<Trial>();
+                srBlockCond3.Add(new Trial(Task.VisualSearch, cond3, practiceEnvs[0], 90));
+                foreach (var env in shuffledEnvs.GetRange(2*trialsPerBlock, trialsPerBlock))
+                    srBlockCond3.Add(new Trial(Task.SceneRecognition, cond3, env, 90));
+
+                var session = new List<List<Trial>>() {srBlockCond1, srBlockCond2, srBlockCond3};
+                return session.OrderBy(_ => Random.value).ToList();
+            }
+            
+            
+            // Visual search Sessions
+            List<List<Trial>> GetVisualSearchSession(int nRepeats)
+            {
+                var vsBlock = new List<Trial>()
+                {
+                    new Trial(Task.VisualSearch, cond1, practiceEnvs[0], 120),
+                    new Trial(Task.VisualSearch, cond2, practiceEnvs[0], 120),
+                    new Trial(Task.VisualSearch, cond3, practiceEnvs[0], 120)
+                };
+
+                var vsSession = new List<List<Trial>>();
+                for (int i = 0; i < nRepeats; i++) 
+                    vsSession.Add(vsBlock.OrderBy(_ => Random.value).ToList());
+                return vsSession;
+            }
+           
+
+            
+            // Blocks (each block is a List of trials) are grouped into Sessions (each session is a list of blocks)
+
+
+            var practiceSession = new List<List<Trial>>() {practiceBlock};
+            var sceneRecSession1 = GetSceneRecognitionSession(3);
+            var sceneRecSession2 = GetSceneRecognitionSession(3);
+            var visSearchSession = GetVisualSearchSession(3);
+
+
+            return practiceSession
+                .Concat(sceneRecSession1).ToList()
+                .Concat(sceneRecSession2).ToList()
+                .Concat(visSearchSession).ToList();
+        }
+        
+
+        public void StartExperiment(string subjId)
+        {
+            // Load the experimental blocks
+            _blocks = GetExperimentalBlocks();
+            Debug.Log($"loaded {_blocks.Count} blocks:");
+
+            // create folders and files
+            var subjectDir = Path.Join(Application.persistentDataPath, subjId);
+
+            // If already exists, don't overwrite or merge, but create new folder (trailing _ appended)
+            while (Directory.Exists(subjectDir))
+            {
+                Debug.Log($"Already exists: {subjectDir}");
+                subjectDir = $"{subjectDir}_";
+                subjId = $"{subjId}_";
+                SenorSummarySingletons.GetInstance<UICallbacks>().subjID.text = subjId;
+            }
+            
+            // if (Directory.Exists(subjectDir))
+            // {
+            //     var tmp = Path.GetFileNameWithoutExtension(Path.GetTempFileName());
+            //     Debug.LogWarning($"Subject Directory for {subjId} exists. Replacing with {tmp}");
+            //     subjId = tmp;
+            //     SenorSummarySingletons.GetInstance<UICallbacks>().subjID.text = subjId;
+            // }
+            
+            foreach(var h in allHandlers) h.NewSubject(subjId);
+
+            // Register events
+            resumedRecording.AddListener(OnTrialStart);
+            
+            // Load first Trial
+            _currTrialIdx = 0;
+            _currBlockIdx = 0;
+            CurrentTrial = _blocks[_currTrialIdx][_currBlockIdx];
+            
+            // Jump to the waiting screen
+            SenorSummarySingletons.GetInstance<UICallbacks>().DeactivateSimulationControlBtns();
+            SenorSummarySingletons.GetInstance<UICallbacks>().DeactivateHiddenButtons();
+            SenorSummarySingletons.GetInstance<UICallbacks>().ActivateBeginTrialButton();
+            SenorSummarySingletons.GetInstance<UICallbacks>().ActivateNavigationBtns();
+            SenorSummarySingletons.GetInstance<SceneHandler>().DeactivateAll();
+            PauseRecording();
+        }
+        
+        // Keep track of current Trial
+        private int _currBlockIdx = -1;
+        private int _currTrialIdx = -1;
+        public UnityEvent currentTrialChanged;
+        private Trial _currTrial;
+        public Trial CurrentTrial
+        {
+            get { return _currTrial;}
+            set
+            {
+                if (_currTrial == value)
+                    return;
+                
+                // if CurrentTrial changed value, invoke event
+                _currTrial = value;
+                currentTrialChanged.Invoke();
+            }
+        }
+        
+        public Tuple<int, int, int, int> GetCurrentIndicesAndTotalTrialCount() =>
+            new Tuple<int, int, int, int>(_currBlockIdx, _blocks.Count, _currTrialIdx, _blocks[_currBlockIdx].Count);
+        public Tuple<int, int> GetPreviousTrialIndices()
+        {
+            int prevBlockIdx = _currBlockIdx;
+            int prevTrialIdx = _currTrialIdx - 1;
+            
+            if (prevTrialIdx < 0)
+            {
+                if (prevBlockIdx <= 0)
+                    return null;
+                
+                prevBlockIdx -= 1;
+                prevTrialIdx = _blocks[prevBlockIdx].Count - 1;
+            }
+            return new Tuple<int, int>(prevBlockIdx, prevTrialIdx);
+        }
+        public Tuple<int, int> GetNextTrialIndices()
+        {
+            int nextBlockIdx = _currBlockIdx;
+            int nextTrialIdx = _currTrialIdx + 1;
+            
+            if (nextTrialIdx > _blocks[nextBlockIdx].Count - 1)
+            {
+                if (nextBlockIdx >= _blocks.Count() -1 )
+                    return null;
+                
+                nextBlockIdx += 1;
+                nextTrialIdx = 0;
+            }
+            return new Tuple<int, int>(nextBlockIdx, nextTrialIdx);
+        }
+
+        public Trial GetNextTrial(bool setAsCurrent)
+        {
+            // Get trial indices 
+            var indices = GetNextTrialIndices();
+            if (indices == null)
+                return CurrentTrial;
+            
+            // Retreive the trial from the list of blocks
+            var (blockIdx, trialIdx) = indices;
+            var trial = _blocks[blockIdx][trialIdx];
+            
+            // Return the trial
+            if (!setAsCurrent)
+                return trial;
+            
+            // Or set as the current trial and return
+            _currBlockIdx = blockIdx;
+            _currTrialIdx = trialIdx;
+            CurrentTrial = trial;
+            return trial;
+        }
+        public Trial GetPreviousTrial(bool setAsCurrent)
+        {
+            // Get trial indices 
+            var indices = GetPreviousTrialIndices();
+            if (indices == null)
+                return CurrentTrial;
+            
+            // Retrieve the trial from the list of blocks
+            var (blockIdx, trialIdx) = indices;
+            var trial = _blocks[blockIdx][trialIdx];
+            
+            // Return the trial
+            if (!setAsCurrent)
+                return trial;
+            
+            // Or set as the current trial and return
+            _currBlockIdx = blockIdx;
+            _currTrialIdx = trialIdx;
+            CurrentTrial = trial;
+            return trial;
+        }
+
+        public void BeginTrial(InputAction.CallbackContext ctx) => BeginTrial();
+        private void BeginTrial()
+        {
+            Debug.Log($"Starting new Trial (condition: {CurrentTrial.EyeTrackingCondition}, environment {CurrentTrial.Environment.Name}");
+            trialInitiated.Invoke();
+            
+            // Set responses to none
+            _reportedRoomCategory = Environment.RoomCategory.None;
+            _reportedSubjectiveRating = -1;
+            _reportedEventsCount = 0;
+            
+            // Start the recording 
+            foreach(var h in allHandlers) h.NewTrial(_currBlockIdx, _currTrialIdx);
+            StartCoroutine(ResumeRecording(5));
+        }
+        
+        private void OnTrialStart()
+        {
+            startEndClip.Play();
+            _endTrialAfterTimeLimit = StartCoroutine(EndTrialAfterTimeLimit());
+            switch (CurrentTrial.Task)
+            {
+                case Task.FreePractice:
+                    SenorSummarySingletons.GetInstance<SceneHandler>().ActivateAllDefaultTargets();
+                    SenorSummarySingletons.GetInstance<UICallbacks>().ActivateSimulationControlBtns();
+                    SenorSummarySingletons.GetInstance<PhospheneSimulator>().DeactivateSimulation();
+                    break;
+                case Task.VisualSearch:
+                    SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject(usePersistentIdx:true);
+                    // SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
+                    break;
+            }
+            _trialDuration = -1f;
+            _trialStartTime = Time.time;
+            _participantTriggerEnabled = true;
+        }
+        private Coroutine _endTrialAfterTimeLimit; 
+        private IEnumerator EndTrialAfterTimeLimit()
+        {
+            var trialStarted = CurrentTrial;
+            yield return  new WaitForSeconds(CurrentTrial.MaxDuration);
+            if ((trialStarted == CurrentTrial) & (!lastSecondRecording) & (!recordingPaused))
+                GetUserResponseAndEndTrial();
+        }
+        
+        /// Pausing & Unpausing the experiment: 
+        /// The script will continue running, but variable recordingPaused is temporarily set to true, which pauses
+        /// the data recording and disables some input-actions.
+        /// 
+        /// Upon pausing the experiment (e.g. between different trials), display a waiting screen.
+        /// Upon resuming the experiment, the participant gets a "Get Ready message" for a specified countdown time.
+        private void PauseRecording()
+        {
+            recordingPaused = true;
+            SenorSummarySingletons.GetInstance<SceneHandler>().JumpToWaitingScreen();
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().DeactivateSimulation();
+        }
+        
+        
+        private IEnumerator ResumeRecording(int waitseconds)
+        {
+            // Get the icon that indicates the eye tracking condition (or all three if free practice)
+            var conditionIcon = (CurrentTrial.Task == Task.FreePractice)?  
+                "❌ 🔒 👁"  : EyeTracking.ConditionSymbol(CurrentTrial.EyeTrackingCondition);   
+            
+            // Display the task and condition in the waiting screen
+            SenorSummarySingletons.GetInstance<SceneHandler>()
+                .SetWaitScreenMessage($"{CurrentTrial.Task.HumanName()} \n{conditionIcon}");
+            
+            // Wait for some seconds before starting the trial
+            yield return new WaitForSeconds(waitseconds);
+            
+            // And go.. 
+            SenorSummarySingletons.GetInstance<SceneHandler>().JumpToEnvironment(CurrentTrial.Environment);
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().ActivateSimulation(CurrentTrial.EyeTrackingCondition);
+            resumedRecording?.Invoke();
+            recordingPaused = false;
+        }
+        
+        /// Participant response 
+        /// 
+        /// In the scene recognition task, the participant hits a trigger to indicate that they recognize the scene 
+        /// In the visual search task, the participant points and triggers whenever they found a target
+        private bool _participantTriggerEnabled;
+        public void OnParticipantTrigger1(InputAction.CallbackContext ctx) => OnParticipantTrigger1();
+        private void OnParticipantTrigger1()
+        {
+            // Ignore if not currently recording
+            Debug.Log($"Participant pressed trigger button! (Experiment is paused: {recordingPaused})");
+            if (recordingPaused || !_participantTriggerEnabled) return;
+            
+            _reportedEventsCount += 1;
+            switch (CurrentTrial.Task)
+            {
+                case Task.FreePractice:
+                    eventClip.Play();
+                    SenorSummarySingletons.GetInstance<PhospheneSimulator>()
+                        .ToggleSimulationActive();
+                    break;
+                case Task.SceneRecognition:
+                    GetUserResponseAndEndTrial();
+                    break;
+                case Task.VisualSearch:
+                    StartCoroutine(ReportTarget());
+                    eventClip.Play();
+                    break;
+            }
+        }
+        
+        
+        private void GetUserResponseAndEndTrial()
+        { 
+            // End the experimental task and waits for the user response (which will conclude the trial)
+            _trialDuration = Time.time - _trialStartTime;
+            _participantTriggerEnabled = false;
+            Debug.Log("COROUTINE:"); //TODO remove
+            Debug.Log(_endTrialAfterTimeLimit);
+            StopCoroutine(_endTrialAfterTimeLimit);
+            Debug.Log(_endTrialAfterTimeLimit);
+            startEndClip.Play();
+            SenorSummarySingletons.GetInstance<UICallbacks>().DeactivateEndTrialButton();
+
+            // Jump to the pause screen
+            SenorSummarySingletons.GetInstance<SceneHandler>().DeactivateAll();
+            SenorSummarySingletons.GetInstance<SceneHandler>().JumpToWaitingScreen();
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().DeactivateSimulation();
+            
+            // Get user response
+            StartCoroutine(WaitForUserResponse());
+        }
+        
+        private IEnumerator WaitForUserResponse()
+        {
+            // Wait for response...
+            var UI = SenorSummarySingletons.GetInstance<UICallbacks>();
+            switch (CurrentTrial.Task)
+            {
+                case Task.SceneRecognition:
+                    UI.PromptSceneRecognitionResponse("What environment did you see?");
+                    yield return new WaitUntil(() => UI.SceneRecognitionResponse != Environment.RoomCategory.None);
+                    UI.PromptSubjectiveRating("How confident are you?");
+                    yield return new WaitUntil(() => UI.SubjectiveRatingResponse != -1);
+                    break;
+                
+                case Task.VisualSearch:
+                    UI.PromptSubjectiveRating("How easy was the task?");
+                    yield return new WaitUntil(() => UI.SubjectiveRatingResponse != -1);
+                    break;
+            }
+            
+            // ... and end the trial.
+            _reportedRoomCategory = UI.SceneRecognitionResponse;
+            _reportedSubjectiveRating = UI.SubjectiveRatingResponse;
+            EndTrial();
+        }
+        
+        
+        
+        // Whenever a target is reported, proceed to the next target object (or if last target end the trial)
+        private bool _reportingTarget;
+        private FocusInfo _pointingTargetHand;
+        private FocusInfo _pointingTargetEye;
+        private FocusInfo _pointingTargetHead;
+        private int _targetIdx = 0;
+        
+        private IEnumerator ReportTarget()
+        {
+            Debug.Log($"trg reported ({_reportedEventsCount})");
+            
+            // Display fixation dot for 1 second
+            _reportingTarget = true;
+            _participantTriggerEnabled = false;
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().SetFocusDot(1);
+            yield return new WaitForSeconds(1);
+            SenorSummarySingletons.GetInstance<PhospheneSimulator>().SetFocusDot(0);
+            _reportingTarget = false;
+            _participantTriggerEnabled = true;
+            
+            // Next target
+            if (!recordingPaused && !lastSecondRecording)
+                SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject(usePersistentIdx:true);
+            // SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
+
+        }
+        
+        
+        private FocusInfo GetPointingTarget(Transform parentTransform, bool fromEyeTracker)
+        {
+            var eyeTracker = SenorSummarySingletons.GetInstance<EyeTracking>();
+            var focusInfo = new FocusInfo();
+            
+            var valid = fromEyeTracker?
+                eyeTracker.GetFocusPoint(GazeIndex.COMBINE, out focusInfo):
+                eyeTracker.GetFocusInfoFromRayCast(Vector3.forward, out focusInfo, parentTransform);
+            return focusInfo; 
+        }
+        
+        
+        /// Ending the experiment 
+        /// EndTrial() is invoked when the max number of targets is reached, or when manually ended the trial.
+        /// The script will continue recording the last second of the trial.
+
+        private bool lastSecondRecording;
+        public void ManuallyEndTrial()
+        {
+            // manuallyEndedTrial = true;
+            if (!lastSecondRecording)
+            {
+                lastSecondRecording = true;
+                Invoke(nameof(GetUserResponseAndEndTrial), 1f);
+            }
+        }
+
+        public void EndTrial()
+        {
+            StopCoroutine(_endTrialAfterTimeLimit);
+            
+            RecordDataEntry(new TrialConfigRecord
+            {
+                ExperimentalTask = CurrentTrial.Task,
+                GazeCondition = CurrentTrial.EyeTrackingCondition,
+                EnvironmentName = CurrentTrial.Environment.Name,
+                EnvironmentClass = CurrentTrial.Environment.roomCategory,
+                Glasses = (Glasses)SenorSummarySingletons.GetInstance<UICallbacks>().glassesDropdown.value,
+                GazeRaySensitivity = SenorSummarySingletons.GetInstance<EyeTracking>().GazeRaySensitivity,
+                DataDelimiter = Data2File.Delimiter,
+                ReportedRoomCategory = _reportedRoomCategory,
+                ReportedSubjectiveRating = _reportedSubjectiveRating,
+                ReportedEventsCount = _reportedEventsCount,
+                TrialDuration = _trialDuration
+            });
+            PauseRecording();
+            lastSecondRecording = false;
+            foreach(var h in allHandlers) h.StopTrial();
+            trialCompleted?.Invoke();
+
+            // If this was the last trial, the experiment is now finished
+            var nextIdx = GetNextTrialIndices();
+            if (nextIdx == null)
+            {
+                SenorSummarySingletons.GetInstance<SceneHandler>().SetWaitScreenMessage("Finished Experiment");
+                experimentCompleted.Invoke();
+                return;
+            }
+
+            // Check if this was the last trial of this block
+            var (blockIdx, trialIdx) = nextIdx;
+            if (blockIdx > _currBlockIdx)
+                ConcludeBlock();
+            
+            // Load next trial
+            GetNextTrial(true);
+        }
+
+        private void ConcludeBlock()
+        {
+            blockCompleted.Invoke();
+            SenorSummarySingletons.GetInstance<UICallbacks>().PostBlock(allHandlers);
+            SenorSummarySingletons.GetInstance<SceneHandler>().SetWaitScreenMessage("Block completed!");
+
+            //TODO:
+            // SenorSummarySingletons.GetInstance<UICallbacks>().BtnPlayground();
+            // SenorSummarySingletons.GetInstance<PhospheneSimulator>().StopTrial();
+            // SenorSummarySingletons.GetInstance<UICallbacks>().PostBlock(allHandlers);
+            // StartNewBlock();
+        }
+
+
+        public void RunCalibrationTest()
+        {
+            StartCoroutine(CalibrationPerformanceTrial());
+        }
+
+        private IEnumerator  CalibrationPerformanceTrial()
+        {
+            
+            // Initiate trial
+            trialInitiated.Invoke(); // Deactivates the UI buttons
+            
+            // Create filestream for the calibrationTest results
+            var eyeHandlers = new List<Data2File> {EyeTrackerDataHandler, SingleEyeDataHandlerL, SingleEyeDataHandlerR,
+                                                    SingleEyeDataHandlerC, EngineDataHandler};
+            foreach(var h in eyeHandlers) h.NewTrial(_currBlockIdx, _currTrialIdx, calibrationTest:true);
+
+            // Jump to the calibration screen
+            var sceneHandler = SenorSummarySingletons.GetInstance<SceneHandler>();
+            sceneHandler.JumpToCalibrationTestScreen();
+            var nDots = sceneHandler.CurrentEnvironment.targetObjects.Length;
+            Debug.Log($"nDots {nDots}");
+            
+            // And Go
+            recordingPaused = false;
+            for (var i = 0; i < nDots; i++)
+            {
+                sceneHandler.NextTargetObject();
+                yield return new WaitForSeconds(1.5f);
+            }
+            
+            // Conclude the trial
+            recordingPaused = true;
+            trialCompleted.Invoke(); //Activates the GUI buttons
+            foreach(var h in eyeHandlers) h.StopTrial();
+            sceneHandler.JumpToWaitingScreen();
+        }
+        
 
     }
 }

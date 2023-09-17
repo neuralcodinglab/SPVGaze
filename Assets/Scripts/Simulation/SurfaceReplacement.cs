@@ -12,11 +12,11 @@ public class SurfaceReplacement : MonoBehaviour
 
 	public enum ReplacementModes {
 		None = 0,
-		ObjectId = 1,
-		CatergoryId	= 2,
-		DepthCompressed	= 3,
-		DepthMultichannel	= 4,
-		Normals	= 5
+		Normals	= 1,
+		ObjectId = 2,
+		CatergoryId	= 3,
+		DepthCompressed	= 4,
+		DepthMultichannel	= 5
 	}
 
 
@@ -33,7 +33,9 @@ public class SurfaceReplacement : MonoBehaviour
 		foreach (var r in renderers)
 		{
 			var id = r.gameObject.GetInstanceID();
+			var layer = r.gameObject.layer;
 			mpb.SetColor("_ObjectColor", EncodeIDAsColor(id));
+			mpb.SetColor("_CategoryColor", EncodeLayerAsColor(layer));
 			r.SetPropertyBlock(mpb);
 			mpb.SetInt("_OutputMode",(int)replacementMode);
 		}
