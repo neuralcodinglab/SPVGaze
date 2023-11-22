@@ -1,0 +1,30 @@
+{
+    "name": "xarphos",
+    "version": "0.1.0",
+    "description": "",
+    "displayName": "Gaze Assisted Phosphene Simulation",
+    "unity": "2021.3",
+    "author": "Mo Nipshagen <dev@mnipshagen.com> (https://github.com/mnipshagen)",
+    "dependencies": {
+        "com.unity.inputsystem": "1.5.0"
+    },
+    "documentationUrl": "",
+    "changelogUrl": "",
+    "keywords": [
+        "unity",
+        "gaze",
+        "gaze assisted",
+        "phosphene",
+        "simulation",
+        "eye tracking",
+        "neuroprosthesis"
+    ],
+    "license": "MIT",
+    "samples": [
+        {
+            "displayName": "Demo",
+            "description": "Demo Scene with a simple Simulation",
+            "path": "Samples~/Demo 1"
+        }
+    ]
+}

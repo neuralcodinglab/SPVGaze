@@ -220,16 +220,3 @@ void ClearActivations(uint3 id : SV_DispatchThreadID)
   // reset render texture
   SimulationRenderTexture[uint3(id.xy, id.z)] = float4(0,0,0,1);
 }
-
-[numthreads(32,32,1)]
-void DebugBuffer(uint3 id : SV_DispatchThreadID)
-{
-  // float2 pixel = PhospheneTexture[float3(id.xy, 0)];
-  // const float actv = pixel.x;
-  // const float size = pixel.y;
-  // // if it's a pixel without activation or radius, we are done
-  // debugBuffer[id.x + id.y * screenResolution.x] = float4(id.x, id.y, actv, size);
-
-  float4 pixel = SimulationRenderTexture[id];
-  debugBuffer[id.x + id.y * ScreenResolution.x] = pixel;
-}

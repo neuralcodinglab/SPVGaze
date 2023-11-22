@@ -21,7 +21,7 @@ namespace Xarphos.DataCollection
     }
     
     /// <summary>
-    /// Class to handle streaming engine and eyetracking data into tsv files. Uses a blocks and trials to organise data.
+    /// Class to handle streaming engine and eye-tracking data into tsv files. Uses a blocks and trials to organise data.
     /// </summary>
     public class Data2File : MonoBehaviour, IDataHandler
     {
@@ -68,7 +68,7 @@ namespace Xarphos.DataCollection
         private void CheckInitialised()
         {
             if (!isInitialised)
-                throw new InvalidOperationException("Trying to interact with Datahandler before it is initialised");
+                throw new InvalidOperationException("Trying to interact with DataHandler before it is initialised");
         }
 
         public void NewSubject(string subjId)
@@ -128,7 +128,7 @@ namespace Xarphos.DataCollection
                     }
                     catch (Exception e)
                     {
-                        Debug.LogWarning($"Writing entry to file failed. DataStructture {dataType.Name}. Exception: {e}");
+                        Debug.LogWarning($"Writing entry to file failed. DataStructure {dataType.Name}. Exception: {e}");
                         continue;
                     }
                     yield return Row2File(row);

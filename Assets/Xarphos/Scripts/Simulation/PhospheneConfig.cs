@@ -1,9 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Text;
-using MathNet.Numerics;
-using MathNet.Numerics.Random;
+using static Xarphos.Simulation.Utility.MathUtilities;
 using UnityEngine;
 
 namespace Xarphos.Simulation
@@ -26,7 +24,9 @@ namespace Xarphos.Simulation
   }
 
   public class PhospheneConfig
-  {   // Data class containing the phosphene configuration (count, locations, sizes)
+  {   
+      private const int RANDOM_SEED = 42;
+      // Data class containing the phosphene configuration (count, locations, sizes)
       // instances can be directly deserialised from a JSON file using the 'load' method
 
       public Phosphene[] phosphenes;
@@ -112,7 +112,7 @@ namespace Xarphos.Simulation
         // create a probability distribution according to cortical magnification and literature approximations
         // custom probability distribution that goes from near-0 to max radius and is higher close to the fovea
         // since continuous distributions are a pain, we approximate with a binned discrete variant.
-        var validEcc = Generate.LinearSpaced(10000, 1e-5, maxEccentricity * TotalFOV);
+        var validEcc = CreateLinearlySpacedRange(10000, 1e-5, maxEccentricity * TotalFOV);
         
         // Thank you, EvK: https://stackoverflow.com/questions/43303538/python-numpy-random-choice-in-c-sharp-with-non-uniform-probability-distribution
         // apply cortical magnification weights (closer to fovea have higher weights, peripheral is less)
@@ -128,14 +128,16 @@ namespace Xarphos.Simulation
           return cp;
         }).ToArray();
 
-        // generate a uniform variable in [0,1) for each phosphene to determine eccentricity & angle from
-        var randomVals = SystemRandomSource.Doubles(nPhosphenes * 2, BitConverter.ToInt32(Encoding.UTF8.GetBytes("penis"), 0));
+        // random number source to generate uniform variables
+        var randomSource = new System.Random(RANDOM_SEED);
           
         for (int i =0; i<nPhosphenes; i++)
         {
           var p = new Phosphene();
+          
+          // generate a uniform variable in [0,1) for each phosphene to determine eccentricity & angle from
           // transform uniform variable into scaled by checking in which cumulative bin it falls
-          var idx = Array.BinarySearch(cumProbs, randomVals[i]);
+          var idx = Array.BinarySearch(cumProbs, randomSource.NextDouble());
             
           // if exact match is not found, Array.BinarySearch will return index of the first items greater than
           // passed value, but as a complement of the index of the item
@@ -146,9 +148,11 @@ namespace Xarphos.Simulation
           if (idx > cumProbs.Length - 1)
             idx = cumProbs.Length - 1;
 
+          // get eccentricity from randomised position
           var ecc = validEcc[idx];
           config.eccentricities[i] = (float)ecc;
-          var theta = Math.PI * 2 * randomVals[i + nPhosphenes];
+          // create a randomised angle
+          var theta = Math.PI * 2 * randomSource.NextDouble();
           config.azimuth_angles[i] = (float)theta;
           
           // calculate cartesian coordinates of phosphene in [0,1] ; eccentricities have fovea at 0,0
@@ -162,7 +166,7 @@ namespace Xarphos.Simulation
 
           // eccentricity scaling function is in activated cortex area per degrees of visual angle ([mm^2]/[degrees])
           // taking the inverse to get visual angle per cortex area activation
-          var magnification = 1.0 / eccentricityScaling(new[] { ecc })[0];
+          var magnification = 1.0 / eccentricityScaling(new double[] { ecc })[0];
           // approximating cortex activation with an average stimulation strength to calculate size
           double avgStim = 30; // micro ampere, stimulation can range from 20-60 μA
           // according to Tehovnik, 2007, Depth-dependent detection of microampere currents delivered to monkey V1
