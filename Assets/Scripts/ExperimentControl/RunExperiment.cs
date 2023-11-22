@@ -4,16 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using DataHandling;
-using DataHandling.Separated;
+using Xarphos.DataCollection;
 using ExperimentControl.UI;
-using mattmc3.dotmore.Extensions;
-using Simulation;
+using Xarphos;
+using Xarphos.Simulation;
 using Unity.VisualScripting;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
-using ViveSR.anipal;
 using ViveSR.anipal.Eye;
 using Random = UnityEngine.Random;
 
@@ -33,18 +31,10 @@ namespace ExperimentControl
         [SerializeField] private AudioSource startEndClip;
 
         public static RunExperiment Instance { get; private set; }
-        private Data2File TrialConfigHandler { get; set; }
-        private Data2File EngineDataHandler { get; set; }
-        private Data2File EyeTrackerDataHandler { get; set; }
-        private Data2File SingleEyeDataHandlerL { get; set; }
-        private Data2File SingleEyeDataHandlerR { get; set; }
-        private Data2File SingleEyeDataHandlerC { get; set; }
-        private IEnumerable<Data2File> allHandlers; 
         
         internal bool recordingPaused = true;
-
-        public UnityEvent trialInitiated;
         public UnityEvent resumedRecording;
+        public UnityEvent trialInitiated;
         public UnityEvent trialCompleted;
         public UnityEvent blockCompleted;
         public UnityEvent experimentCompleted;
@@ -55,35 +45,18 @@ namespace ExperimentControl
                 throw new InvalidOperationException("Can only have 1 'RunExperiment' class active");
             Instance = this;
 
-            TrialConfigHandler = gameObject.AddComponent<Data2File>();
-            TrialConfigHandler.DataStructure = typeof(TrialConfigRecord);
-            EngineDataHandler = gameObject.AddComponent<Data2File>();
-            EngineDataHandler.DataStructure = typeof(EngineDataRecord);
-            EyeTrackerDataHandler = gameObject.AddComponent<Data2File>();
-            EyeTrackerDataHandler.DataStructure = typeof(EyeTrackerDataRecord);
-            SingleEyeDataHandlerL = gameObject.AddComponent<Data2File>();
-            SingleEyeDataHandlerL.DataStructure = typeof(SingleEyeDataRecord);
-            SingleEyeDataHandlerL.FileName += "L";
-            SingleEyeDataHandlerR = gameObject.AddComponent<Data2File>();
-            SingleEyeDataHandlerR.DataStructure = typeof(SingleEyeDataRecord);
-            SingleEyeDataHandlerR.FileName += "R";
-            SingleEyeDataHandlerC = gameObject.AddComponent<Data2File>();
-            SingleEyeDataHandlerC.DataStructure = typeof(SingleEyeDataRecord);
-            SingleEyeDataHandlerC.FileName += "C";
-            allHandlers = new List<Data2File>
-            {
-                TrialConfigHandler,
-                EngineDataHandler,
-                EyeTrackerDataHandler,
-                SingleEyeDataHandlerL,
-                SingleEyeDataHandlerR,
-                SingleEyeDataHandlerC
-            };
+            // Register the data handlers after a half second delay to ensure that the DataCollector is initialized
+            Invoke(nameof(RegisterHandler), 0.5f);
 
             resumedRecording ??= new UnityEvent();
             trialCompleted ??= new UnityEvent();
             blockCompleted ??= new UnityEvent();
             experimentCompleted ??= new UnityEvent();
+        }
+
+        private void RegisterHandler()
+        {
+            DataCollector.Instance.RegisterNewHandler<TrialConfigRecord>();
         }
 
         private void Start()
@@ -94,37 +67,8 @@ namespace ExperimentControl
         
         /// Data recording
         /// at each fixed update, an entry is recorded for the unity engine data
-        /// the other datapoints are recorded upon the start of the trial and start of the experiment.
-        
-        
-        private void RecordDataEntry(IDataStructure entry, Data2File handler)
-        {
-            if(recordingPaused) return;
-            
-            handler.AddRecord(entry);
-        }
+        /// the other datapoints are recorded upon the start of the trial and start of the experiment. <summary>
 
-        public void RecordDataEntry(TrialConfigRecord entry) => RecordDataEntry(entry, TrialConfigHandler);
-        public void RecordDataEntry(EngineDataRecord entry) => RecordDataEntry(entry, EngineDataHandler);
-        public void RecordDataEntry(EyeTrackerDataRecord entry) => RecordDataEntry(entry, EyeTrackerDataHandler);
-
-        public void RecordDataEntry(SingleEyeDataRecord entry)
-        {
-            switch (entry.EyeIndex)
-            {
-                case GazeIndex.LEFT:
-                    RecordDataEntry(entry, SingleEyeDataHandlerL);
-                    break;
-                case GazeIndex.RIGHT:
-                    RecordDataEntry(entry, SingleEyeDataHandlerR);
-                    break;
-                case GazeIndex.COMBINE:
-                    RecordDataEntry(entry, SingleEyeDataHandlerC);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
         private void FixedUpdate()
         {
             var trgCollider = string.Empty; 
@@ -137,30 +81,28 @@ namespace ExperimentControl
             }
 
             if (recordingPaused) return;
-            var record = new EngineDataRecord(); 
-            record.TimeStamp = DateTime.Now.Ticks;
-            record.XROriginPos = xrOrigin.transform.position;
-            record.XROriginRot = xrOrigin.transform.rotation;
-            record.XRHeadPos = xrHead.transform.position;
-            record.XRHeadRot = xrHead.transform.rotation;
-            record.HandLPos = handLeft.transform.position;
-            record.HandLRot = handLeft.transform.rotation;
-            record.HandRPos = handRight.transform.position;
-            record.HandRRot = handRight.transform.rotation;
-            record.CollisionCount = StaticDataReport.CollisionCount;
-            record.FrameCount = Time.frameCount;
-            record.ReportedEventsCount = _reportedEventsCount;
-            record.ActiveTarget = CurrentTrial.Environment.ActiveTargetName;
-            record.PointLocationEye = _reportingTarget? _pointingTargetEye.point : Vector3.zero;
-            record.PointLocationHand = _reportingTarget? _pointingTargetHand.point : Vector3.zero;
-            record.PointLocationHead = _reportingTarget? _pointingTargetHead.point : Vector3.zero ;
-            record.TargetHit = trgCollider;
-            RecordDataEntry(record);
-            
+            var record = new EngineDataRecord
+            {
+                TimeStamp = DateTime.Now.Ticks,
+                XROriginPos = xrOrigin.transform.position,
+                XROriginRot = xrOrigin.transform.rotation,
+                XRHeadPos = xrHead.transform.position,
+                XRHeadRot = xrHead.transform.rotation,
+                HandLPos = handLeft.transform.position,
+                HandLRot = handLeft.transform.rotation,
+                HandRPos = handRight.transform.position,
+                HandRRot = handRight.transform.rotation,
+                // CollisionCount = StaticDataReport.CollisionCount,
+                FrameCount = Time.frameCount,
+                // ReportedEventsCount = _reportedEventsCount,
+                // ActiveTarget = CurrentTrial.Environment.ActiveTargetName,
+                PointLocationEye = _reportingTarget ? _pointingTargetEye.point : Vector3.zero,
+                PointLocationHand = _reportingTarget ? _pointingTargetHand.point : Vector3.zero,
+                PointLocationHead = _reportingTarget ? _pointingTargetHead.point : Vector3.zero,
+                // TargetHit = trgCollider
+            };
+            DataCollector.Instance.RecordDataEntry(record);
         }
-        
-       
-        
         
         /// The experiment trial configuration
         /// 
@@ -214,8 +156,8 @@ namespace ExperimentControl
                     EyeTracking.EyeTrackingConditions.SimulationFixedToGaze);
 
             // Get all environments, split in practice and experiment set and randomly shuffle 
-            var practiceEnvs = SenorSummarySingletons.GetInstance<SceneHandler>().GetPracticeEnvironments().ToList();
-            var experimentEnvs = SenorSummarySingletons.GetInstance<SceneHandler>().GetExperimentEnvironments().ToList();
+            var practiceEnvs = SingletonRegister.GetInstance<SceneHandler>().GetPracticeEnvironments().ToList();
+            var experimentEnvs = SingletonRegister.GetInstance<SceneHandler>().GetExperimentEnvironments().ToList();
             Debug.Log($"Practice envs: {practiceEnvs.Count}, Exp. envs: {experimentEnvs.Count}");
 
             // Practice Session 
@@ -315,7 +257,7 @@ namespace ExperimentControl
                 Debug.Log($"Already exists: {subjectDir}");
                 subjectDir = $"{subjectDir}_";
                 subjId = $"{subjId}_";
-                SenorSummarySingletons.GetInstance<UICallbacks>().subjID.text = subjId;
+                SingletonRegister.GetInstance<UICallbacks>().subjID.text = subjId;
             }
             
             // if (Directory.Exists(subjectDir))
@@ -326,7 +268,7 @@ namespace ExperimentControl
             //     SenorSummarySingletons.GetInstance<UICallbacks>().subjID.text = subjId;
             // }
             
-            foreach(var h in allHandlers) h.NewSubject(subjId);
+            DataCollector.Instance.StartRecordingNewSubject(subjId);
 
             // Register events
             resumedRecording.AddListener(OnTrialStart);
@@ -337,11 +279,11 @@ namespace ExperimentControl
             CurrentTrial = _blocks[_currTrialIdx][_currBlockIdx];
             
             // Jump to the waiting screen
-            SenorSummarySingletons.GetInstance<UICallbacks>().DeactivateSimulationControlBtns();
-            SenorSummarySingletons.GetInstance<UICallbacks>().DeactivateHiddenButtons();
-            SenorSummarySingletons.GetInstance<UICallbacks>().ActivateBeginTrialButton();
-            SenorSummarySingletons.GetInstance<UICallbacks>().ActivateNavigationBtns();
-            SenorSummarySingletons.GetInstance<SceneHandler>().DeactivateAll();
+            SingletonRegister.GetInstance<UICallbacks>().DeactivateSimulationControlBtns();
+            SingletonRegister.GetInstance<UICallbacks>().DeactivateHiddenButtons();
+            SingletonRegister.GetInstance<UICallbacks>().ActivateBeginTrialButton();
+            SingletonRegister.GetInstance<UICallbacks>().ActivateNavigationBtns();
+            SingletonRegister.GetInstance<SceneHandler>().DeactivateAll();
             PauseRecording();
         }
         
@@ -404,7 +346,7 @@ namespace ExperimentControl
             if (indices == null)
                 return CurrentTrial;
             
-            // Retreive the trial from the list of blocks
+            // Retrieve the trial from the list of blocks
             var (blockIdx, trialIdx) = indices;
             var trial = _blocks[blockIdx][trialIdx];
             
@@ -452,7 +394,7 @@ namespace ExperimentControl
             _reportedEventsCount = 0;
             
             // Start the recording 
-            foreach(var h in allHandlers) h.NewTrial(_currBlockIdx, _currTrialIdx);
+            DataCollector.Instance.NewTrial(_currBlockIdx, _currTrialIdx);
             StartCoroutine(ResumeRecording(5));
         }
         
@@ -463,12 +405,12 @@ namespace ExperimentControl
             switch (CurrentTrial.Task)
             {
                 case Task.FreePractice:
-                    SenorSummarySingletons.GetInstance<SceneHandler>().ActivateAllDefaultTargets();
-                    SenorSummarySingletons.GetInstance<UICallbacks>().ActivateSimulationControlBtns();
-                    SenorSummarySingletons.GetInstance<PhospheneSimulator>().DeactivateSimulation();
+                    SingletonRegister.GetInstance<SceneHandler>().ActivateAllDefaultTargets();
+                    SingletonRegister.GetInstance<UICallbacks>().ActivateSimulationControlBtns();
+                    SingletonRegister.GetInstance<PhospheneSimulator>().DeactivateSimulation();
                     break;
                 case Task.VisualSearch:
-                    SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject(usePersistentIdx:true);
+                    SingletonRegister.GetInstance<SceneHandler>().NextTargetObject(usePersistentIdx:true);
                     // SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
                     break;
             }
@@ -494,27 +436,27 @@ namespace ExperimentControl
         private void PauseRecording()
         {
             recordingPaused = true;
-            SenorSummarySingletons.GetInstance<SceneHandler>().JumpToWaitingScreen();
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().DeactivateSimulation();
+            SingletonRegister.GetInstance<SceneHandler>().JumpToWaitingScreen();
+            SingletonRegister.GetInstance<PhospheneSimulator>().DeactivateSimulation();
         }
         
         
-        private IEnumerator ResumeRecording(int waitseconds)
+        private IEnumerator ResumeRecording(int waitSeconds)
         {
             // Get the icon that indicates the eye tracking condition (or all three if free practice)
             var conditionIcon = (CurrentTrial.Task == Task.FreePractice)?  
                 "❌ 🔒 👁"  : EyeTracking.ConditionSymbol(CurrentTrial.EyeTrackingCondition);   
             
             // Display the task and condition in the waiting screen
-            SenorSummarySingletons.GetInstance<SceneHandler>()
+            SingletonRegister.GetInstance<SceneHandler>()
                 .SetWaitScreenMessage($"{CurrentTrial.Task.HumanName()} \n{conditionIcon}");
             
             // Wait for some seconds before starting the trial
-            yield return new WaitForSeconds(waitseconds);
+            yield return new WaitForSeconds(waitSeconds);
             
             // And go.. 
-            SenorSummarySingletons.GetInstance<SceneHandler>().JumpToEnvironment(CurrentTrial.Environment);
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().ActivateSimulation(CurrentTrial.EyeTrackingCondition);
+            SingletonRegister.GetInstance<SceneHandler>().JumpToEnvironment(CurrentTrial.Environment);
+            SingletonRegister.GetInstance<PhospheneSimulator>().ActivateSimulation(CurrentTrial.EyeTrackingCondition);
             resumedRecording?.Invoke();
             recordingPaused = false;
         }
@@ -536,7 +478,7 @@ namespace ExperimentControl
             {
                 case Task.FreePractice:
                     eventClip.Play();
-                    SenorSummarySingletons.GetInstance<PhospheneSimulator>()
+                    SingletonRegister.GetInstance<PhospheneSimulator>()
                         .ToggleSimulationActive();
                     break;
                 case Task.SceneRecognition:
@@ -560,12 +502,12 @@ namespace ExperimentControl
             StopCoroutine(_endTrialAfterTimeLimit);
             Debug.Log(_endTrialAfterTimeLimit);
             startEndClip.Play();
-            SenorSummarySingletons.GetInstance<UICallbacks>().DeactivateEndTrialButton();
+            SingletonRegister.GetInstance<UICallbacks>().DeactivateEndTrialButton();
 
             // Jump to the pause screen
-            SenorSummarySingletons.GetInstance<SceneHandler>().DeactivateAll();
-            SenorSummarySingletons.GetInstance<SceneHandler>().JumpToWaitingScreen();
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().DeactivateSimulation();
+            SingletonRegister.GetInstance<SceneHandler>().DeactivateAll();
+            SingletonRegister.GetInstance<SceneHandler>().JumpToWaitingScreen();
+            SingletonRegister.GetInstance<PhospheneSimulator>().DeactivateSimulation();
             
             // Get user response
             StartCoroutine(WaitForUserResponse());
@@ -574,7 +516,7 @@ namespace ExperimentControl
         private IEnumerator WaitForUserResponse()
         {
             // Wait for response...
-            var UI = SenorSummarySingletons.GetInstance<UICallbacks>();
+            var UI = SingletonRegister.GetInstance<UICallbacks>();
             switch (CurrentTrial.Task)
             {
                 case Task.SceneRecognition:
@@ -612,15 +554,15 @@ namespace ExperimentControl
             // Display fixation dot for 1 second
             _reportingTarget = true;
             _participantTriggerEnabled = false;
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().SetFocusDot(1);
+            SingletonRegister.GetInstance<PhospheneSimulator>().SetFocusDot(1);
             yield return new WaitForSeconds(1);
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>().SetFocusDot(0);
+            SingletonRegister.GetInstance<PhospheneSimulator>().SetFocusDot(0);
             _reportingTarget = false;
             _participantTriggerEnabled = true;
             
             // Next target
             if (!recordingPaused && !lastSecondRecording)
-                SenorSummarySingletons.GetInstance<SceneHandler>().NextTargetObject(usePersistentIdx:true);
+                SingletonRegister.GetInstance<SceneHandler>().NextTargetObject(usePersistentIdx:true);
             // SenorSummarySingletons.GetInstance<SceneHandler>().RandomTargetObject();
 
         }
@@ -628,7 +570,7 @@ namespace ExperimentControl
         
         private FocusInfo GetPointingTarget(Transform parentTransform, bool fromEyeTracker)
         {
-            var eyeTracker = SenorSummarySingletons.GetInstance<EyeTracking>();
+            var eyeTracker = SingletonRegister.GetInstance<EyeTracking>();
             var focusInfo = new FocusInfo();
             
             var valid = fromEyeTracker?
@@ -657,14 +599,14 @@ namespace ExperimentControl
         {
             StopCoroutine(_endTrialAfterTimeLimit);
             
-            RecordDataEntry(new TrialConfigRecord
+            DataCollector.Instance.RecordDataEntry(new TrialConfigRecord
             {
                 ExperimentalTask = CurrentTrial.Task,
                 GazeCondition = CurrentTrial.EyeTrackingCondition,
                 EnvironmentName = CurrentTrial.Environment.Name,
                 EnvironmentClass = CurrentTrial.Environment.roomCategory,
-                Glasses = (Glasses)SenorSummarySingletons.GetInstance<UICallbacks>().glassesDropdown.value,
-                GazeRaySensitivity = SenorSummarySingletons.GetInstance<EyeTracking>().GazeRaySensitivity,
+                Glasses = (Glasses)SingletonRegister.GetInstance<UICallbacks>().glassesDropdown.value,
+                GazeRaySensitivity = SingletonRegister.GetInstance<EyeTracking>().GazeRaySensitivity,
                 DataDelimiter = Data2File.Delimiter,
                 ReportedRoomCategory = _reportedRoomCategory,
                 ReportedSubjectiveRating = _reportedSubjectiveRating,
@@ -673,14 +615,14 @@ namespace ExperimentControl
             });
             PauseRecording();
             lastSecondRecording = false;
-            foreach(var h in allHandlers) h.StopTrial();
+            DataCollector.Instance.StopTrial();
             trialCompleted?.Invoke();
 
             // If this was the last trial, the experiment is now finished
             var nextIdx = GetNextTrialIndices();
             if (nextIdx == null)
             {
-                SenorSummarySingletons.GetInstance<SceneHandler>().SetWaitScreenMessage("Finished Experiment");
+                SingletonRegister.GetInstance<SceneHandler>().SetWaitScreenMessage("Finished Experiment");
                 experimentCompleted.Invoke();
                 return;
             }
@@ -697,8 +639,8 @@ namespace ExperimentControl
         private void ConcludeBlock()
         {
             blockCompleted.Invoke();
-            SenorSummarySingletons.GetInstance<UICallbacks>().PostBlock(allHandlers);
-            SenorSummarySingletons.GetInstance<SceneHandler>().SetWaitScreenMessage("Block completed!");
+            SingletonRegister.GetInstance<UICallbacks>().PostBlock(DataCollector.Instance.GetHandlerRefs());
+            SingletonRegister.GetInstance<SceneHandler>().SetWaitScreenMessage("Block completed!");
 
             //TODO:
             // SenorSummarySingletons.GetInstance<UICallbacks>().BtnPlayground();
@@ -713,19 +655,17 @@ namespace ExperimentControl
             StartCoroutine(CalibrationPerformanceTrial());
         }
 
-        private IEnumerator  CalibrationPerformanceTrial()
+        private IEnumerator CalibrationPerformanceTrial()
         {
             
             // Initiate trial
             trialInitiated.Invoke(); // Deactivates the UI buttons
             
             // Create filestream for the calibrationTest results
-            var eyeHandlers = new List<Data2File> {EyeTrackerDataHandler, SingleEyeDataHandlerL, SingleEyeDataHandlerR,
-                                                    SingleEyeDataHandlerC, EngineDataHandler};
-            foreach(var h in eyeHandlers) h.NewTrial(_currBlockIdx, _currTrialIdx, calibrationTest:true);
+            DataCollector.Instance.NewTrial(_currBlockIdx, _currTrialIdx, calibrationTest: true);
 
             // Jump to the calibration screen
-            var sceneHandler = SenorSummarySingletons.GetInstance<SceneHandler>();
+            var sceneHandler = SingletonRegister.GetInstance<SceneHandler>();
             sceneHandler.JumpToCalibrationTestScreen();
             var nDots = sceneHandler.CurrentEnvironment.targetObjects.Length;
             Debug.Log($"nDots {nDots}");
@@ -741,7 +681,7 @@ namespace ExperimentControl
             // Conclude the trial
             recordingPaused = true;
             trialCompleted.Invoke(); //Activates the GUI buttons
-            foreach(var h in eyeHandlers) h.StopTrial();
+            DataCollector.Instance.StopTrial();
             sceneHandler.JumpToWaitingScreen();
         }
         

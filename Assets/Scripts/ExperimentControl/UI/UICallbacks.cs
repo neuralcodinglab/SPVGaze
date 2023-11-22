@@ -3,18 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using DataHandling;
-using DataHandling.Separated;
 using MathNet.Numerics.Statistics;
-using Simulation;
+using Xarphos;
+using Xarphos.Simulation;
+using Xarphos.DataCollection;
 using TMPro;
-using Unity.VisualScripting;
-using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using UnityEngine.XR.Interaction.Toolkit;
 using ViveSR.anipal.Eye;
 
 namespace ExperimentControl.UI
@@ -77,14 +73,14 @@ namespace ExperimentControl.UI
 
         private static T GetNullSafe<T>()
         {
-            var o = SenorSummarySingletons.GetInstance<T>();
+            var o = SingletonRegister.GetInstance<T>();
             if (o == null) throw new NullReferenceException("Failed to retrieve instance from Singleton collection");
             return o;
         }
 
         private void Awake()
         {
-            SenorSummarySingletons.RegisterType(this);
+            SingletonRegister.RegisterType(this);
         }
 
         private void Start()
@@ -116,12 +112,12 @@ namespace ExperimentControl.UI
             RunExperiment.Instance.trialCompleted.AddListener(ActivateBeginTrialButton);
             RunExperiment.Instance.trialCompleted.AddListener(DeactivateEndTrialButton);
             RunExperiment.Instance.trialCompleted.AddListener(DeactivateSimulationControlBtns);
-            SenorSummarySingletons.GetInstance<SceneHandler>().environmentChanged.AddListener( environment =>
+            SingletonRegister.GetInstance<SceneHandler>().environmentChanged.AddListener( environment =>
                 environmentVal.text = environment.Name);
 
             
             
-            SenorSummarySingletons.GetInstance<PhospheneSimulator>()
+            SingletonRegister.GetInstance<PhospheneSimulator>()
                 .onChangeGazeCondition.AddListener(condition => conditionVal.text = condition.ToString());
             RunExperiment.Instance.currentTrialChanged.AddListener(UpdateTrialInfo);
             RunExperiment.Instance.currentTrialChanged.AddListener(() => {btnCalibrate.interactable = true;});
@@ -317,14 +313,14 @@ namespace ExperimentControl.UI
 
         public void BtnResetAlignment()
         {
-            SenorSummarySingletons.GetInstance<InputHandler>().ResetCamera2OriginAlignment();
+            SingletonRegister.GetInstance<InputHandler>().ResetCamera2OriginAlignment();
         }
 
         public int SubjectiveRatingResponse {get; set;}
         public void PromptSubjectiveRating(string message)
         {
             SubjectiveRatingResponse = -1;
-            SenorSummarySingletons.GetInstance<SceneHandler>().SetWaitScreenMessage(message);
+            SingletonRegister.GetInstance<SceneHandler>().SetWaitScreenMessage(message);
             ActivateSubjectiveRatingSlider();
         }
 
@@ -353,7 +349,7 @@ namespace ExperimentControl.UI
         {
             SceneRecognitionResponse = Environment.RoomCategory.None;
             ActivateSceneResponseBtns();
-            SenorSummarySingletons.GetInstance<SceneHandler>().SetWaitScreenMessage(message);
+            SingletonRegister.GetInstance<SceneHandler>().SetWaitScreenMessage(message);
         }
         public void ActivateSceneResponseBtns()
         {

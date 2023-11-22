@@ -1,16 +1,11 @@
-using System.Collections;
-using System.Collections.Generic;
 using System;
 using System.Linq;
-using SQLitePCL;
 using TMPro;
-using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.UIElements;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.LowLevel;
 using Random = UnityEngine.Random;
+using Xarphos;
 
 namespace ExperimentControl
 {
@@ -219,7 +214,7 @@ namespace ExperimentControl
             _allEnvironments = GetAllEnvironments();
             _practiceEnvironments = GetPracticeEnvironments();
             _persistentTargetIdx = -1;
-            SenorSummarySingletons.RegisterType(this);
+            SingletonRegister.RegisterType(this);
         }
 
     }

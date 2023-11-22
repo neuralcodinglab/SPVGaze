@@ -1,4 +1,5 @@
 using System;
+using Xarphos;
 using DataHandling;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ namespace ExperimentControl
         private void Start()
         {
             coll ??= GetComponent<Collider>();
-            inputHandler = SenorSummarySingletons.GetInstance<InputHandler>();
+            inputHandler = SingletonRegister.GetInstance<InputHandler>();
             inputHandler.onChangeHallway.AddListener( hw => inPlayground = hw.Name == HallwayCreator.Hallways.Playground.ToString());
         }
 

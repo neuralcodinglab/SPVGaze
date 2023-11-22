@@ -1,7 +1,6 @@
 using System;
-using System.Collections;
-using ExperimentControl.UI;
-using Simulation;
+using Xarphos;
+using Xarphos.Simulation;
 using Unity.XR.CoreUtils;
 using UnityEngine;
 using UnityEngine.Events;
@@ -171,7 +170,7 @@ namespace ExperimentControl
         private void Awake()
         {
             xrOrigin ??= xrOriginObj.GetComponent<XROrigin>();
-            SenorSummarySingletons.RegisterType(this);
+            SingletonRegister.RegisterType(this);
         }
 
         private void Start()
@@ -221,11 +220,11 @@ namespace ExperimentControl
 
         public void ResetCamera2OriginAlignment()
         {
-            var headRotation = SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.localRotation;
+            var headRotation = SingletonRegister.GetInstance<PhospheneSimulator>().transform.localRotation;
             var rotationCorrection = Quaternion.Inverse(headRotation).eulerAngles;
             cameraOffset.transform.localRotation = Quaternion.Euler(new Vector3(0, rotationCorrection.y, 0));
             
-            var headPos = SenorSummarySingletons.GetInstance<PhospheneSimulator>().transform.position;
+            var headPos = SingletonRegister.GetInstance<PhospheneSimulator>().transform.position;
             var originPos = xrOrigin.transform.position;
             var offsetPos = cameraOffset.transform.position;
 

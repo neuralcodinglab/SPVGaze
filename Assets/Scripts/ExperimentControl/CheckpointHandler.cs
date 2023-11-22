@@ -1,6 +1,7 @@
 using System;
 using DataHandling;
 using UnityEngine;
+using Xarphos;
 
 namespace ExperimentControl
 {
@@ -16,7 +17,7 @@ namespace ExperimentControl
 
         private void Start()
         {
-            SenorSummarySingletons.GetInstance<InputHandler>().onChangeHallway.AddListener(_ =>
+            SingletonRegister.GetInstance<InputHandler>().onChangeHallway.AddListener(_ =>
             {
                 checkpointID = int.MaxValue;
                 checkpointInFrontOnEnter = false;

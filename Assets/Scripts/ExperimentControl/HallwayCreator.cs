@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Xarphos;
 
 namespace ExperimentControl
 {
@@ -52,7 +53,7 @@ namespace ExperimentControl
             };
             HallwayObjects = new Dictionary<Hallways, Hallway>();
             
-            SenorSummarySingletons.RegisterType(this);
+            SingletonRegister.RegisterType(this);
             
             // CreateHallway(playground, -SectionSize*2, Hallways.Playground);
             // CreateHallway(hallway1, 0, Hallways.Hallway1);
@@ -199,9 +200,9 @@ namespace ExperimentControl
             HallwayObjects[which] = collect;
         }
 
-        private Func<GameObject, float, GameObject> GetInstantiationShorthand(float xpos, GameObject parent)
+        private Func<GameObject, float, GameObject> GetInstantiationShorthand(float xPos, GameObject parent)
         {
-            return (prefab, zPos) => Instantiate(prefab, new Vector3(xpos, 0, zPos), Quaternion.identity, parent.transform);
+            return (prefab, zPos) => Instantiate(prefab, new Vector3(xPos, 0, zPos), Quaternion.identity, parent.transform);
         }
     }
 }

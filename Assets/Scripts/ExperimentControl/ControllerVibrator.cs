@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
+using Xarphos;
 
 namespace ExperimentControl
 {
@@ -30,7 +31,7 @@ namespace ExperimentControl
                 Debug.LogWarning("Found no controller in parent;");
                 gameObject.SetActive(false);
             }
-            SenorSummarySingletons.GetInstance<InputHandler>().RegisterControllerReference(this, transform.parent.name.ToLower().StartsWith("right"));
+            SingletonRegister.GetInstance<InputHandler>().RegisterControllerReference(this, transform.parent.name.ToLower().StartsWith("right"));
         }
 
         public void ExternalVibrationStart(float frequency, float amplitude=.7f)
