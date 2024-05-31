@@ -4,6 +4,8 @@ This repository contains the experimental scripts for the publication: de Ruyter
 Note that this repository only contains the experimental scripts. The data-analysis can be found here: https://github.com/neuralcodinglab/SPVGazeAnalysis/tree/main
 
 # Remarks
+The code is specific to our experimental setup which used the HTC VIVE Pro Eye headset, and 3D virtual environments designed by ArchVizPRO studios (which you have to buy in the Unity asset store: https://assetstore.unity.com/publishers/13358)
+
 The following libraries are excluded from the upload and need to be added locally:
 - OpenCV for Unity [From Unity Asset Store](https://assetstore.unity.com/packages/tools/integration/opencv-for-unity-21088)
 - ViveFoveatedRendering [From Unity Asset Store](https://assetstore.unity.com/packages/tools/particles-effects/vive-foveated-rendering-145635)
